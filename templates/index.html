@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hemant's Quote Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Editor Panel (700px wide) -->
+    <div class="editor-panel">
+        <h2>Hemant's Quote Generator</h2>
+
+        <!-- Saved Quotes Dropdown -->
+        <div class="saved-quotes-section">
+            <select id="savedQuotes" onchange="loadQuote(this.value)">
+                <option value="">-- New Quote --</option>
+            </select>
+            <button class="delete-btn" onclick="deleteCurrentQuote()" title="Delete selected quote">Delete</button>
+        </div>
+
+        <!-- Document Type Toggle + Hourly Rate (side by side) -->
+        <div class="doc-rate-row">
+            <div class="toggle-container">
+                <span class="toggle-label">Quote</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="docType" onchange="updatePreview()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Invoice</span>
+            </div>
+            <div class="rate-panel">
+                <span class="currency">AED</span>
+                <input type="number" id="hourlyRate" value="200" min="0" onchange="updatePreview()">
+                <span class="per-hour">/ hr</span>
+                <button class="save-rate-btn" onclick="saveHourlyRate()">Save</button>
+            </div>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="two-columns">
+            <!-- Left Column -->
+            <div class="column">
+                <h3>Document Details</h3>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="invoiceDate" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Invoice #</label>
+                    <input type="text" id="invoiceNumber" value="01" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>PO #</label>
+                    <input type="text" id="poNumber" value="PO000000" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Job ID</label>
+                    <input type="text" id="jobId" value="EVS 00-00000" onchange="updatePreview()">
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="column">
+                <h3>Client Details</h3>
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" id="clientCompany" value="Company Name" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea id="clientAddress" rows="3" onchange="updatePreview()">PO Box 00000
+Location - City
+United Arab Emirates</textarea>
+                </div>
+                <div class="form-group">
+                    <label>POC (Point of Contact)</label>
+                    <input type="text" id="poc" value="Contact Name" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Venue</label>
+                    <input type="text" id="venue" value="Venue Name" onchange="updatePreview()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Work Period and Job Description -->
+        <div class="two-columns">
+            <div class="column">
+                <h3>Work Period</h3>
+                <div class="form-group">
+                    <label>From Date</label>
+                    <input type="date" id="dateFrom" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>To Date</label>
+                    <input type="date" id="dateTo" onchange="updatePreview()">
+                </div>
+                <button class="generate-btn" onclick="generateDays()">Generate Days</button>
+            </div>
+            <div class="column">
+                <h3>Job Description</h3>
+                <div class="form-group">
+                    <label>Description</label>
+                    <input type="text" id="jobDescription" value="Sound Operator" onchange="updatePreview()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Hours Per Day -->
+        <h3>Hours Per Day</h3>
+        <div class="line-items-section" id="lineItemsContainer">
+            <p class="hint">Select date range and click "Generate Days"</p>
+        </div>
+
+        <!-- Tax and Totals -->
+        <div class="totals-editor">
+            <div class="form-group">
+                <label>Tax Rate (%)</label>
+                <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
+            </div>
+            <div class="totals-display">
+                <div>Subtotal: <span id="editorSubtotal">AED 0</span></div>
+                <div>Total: <span id="editorTotal">AED 0</span></div>
+            </div>
+        </div>
+
+        <!-- Bank Details (Collapsible) -->
+        <div class="collapsible-section">
+            <h3 class="collapsible-header" onclick="toggleBankDetails()">
+                Bank Details <span id="bankToggleIcon">▶</span>
+            </h3>
+            <div class="bank-details-editor" id="bankDetailsContent" style="display: none;">
+                <div class="form-group">
+                    <label>Account Holder</label>
+                    <input type="text" id="bankAccountHolder" value="Hemanth Kulamullathil" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" id="bankName" value="Mashreq Bank" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>Account Number</label>
+                    <input type="text" id="bankAccountNumber" value="019010238158" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>IBAN</label>
+                    <input type="text" id="bankIban" value="AE750330000019010238158" onchange="updatePreview()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="save-btn" onclick="saveQuote()">Save Quote</button>
+            <button class="print-btn" onclick="window.print()">Print / PDF</button>
+        </div>
+    </div>
+
+    <!-- Invoice Preview -->
+    <div class="invoice-container">
+        <div class="invoice">
+            <!-- Header -->
+            <div class="invoice-header">
+                <h1>HEMANTH KULAMULLATHIL</h1>
+                <span class="invoice-label" id="docTypeLabel">QUOTE</span>
+            </div>
+
+            <!-- Contact Bar -->
+            <div class="contact-bar">
+                <span><span class="icon">&#128205;</span> Address: CBD 8 International CITY, DUBAI</span>
+                <span>|</span>
+                <span><span class="icon">&#9993;</span> Email: nandu.hemanth@gmail.com</span>
+                <span>|</span>
+                <span><span class="icon">&#128222;</span> Mobile: +971558722420</span>
+            </div>
+
+            <!-- Details Section -->
+            <div class="details-section">
+                <div class="details-left">
+                    <div class="detail-row">
+                        <span class="detail-label">DATE:</span><br>
+                        <span class="detail-value" id="displayDate">--</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label" id="docNumberLabel">QUOTE#:</span><br>
+                        <span class="detail-value" id="displayNumber">01</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">PO #:</span><br>
+                        <span class="detail-value" id="displayPO">PO000000</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">JOB ID:</span><br>
+                        <span class="detail-value" id="displayJobId">EVS 00-00000</span>
+                    </div>
+                </div>
+                <div class="details-right">
+                    <div class="detail-row">
+                        <span class="detail-label">TO:</span><br>
+                        <span class="detail-value" id="displayClient">Company Name<br>PO Box 00000<br>Location - City<br>United Arab Emirates</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POC Section -->
+            <div class="poc-section">
+                <div class="poc-item header">POC</div>
+                <div class="poc-item header">COMPANY</div>
+                <div class="poc-item header">VENUE</div>
+            </div>
+            <div class="poc-section values">
+                <div class="poc-item value" id="displayPOC">Contact Name</div>
+                <div class="poc-item value" id="displayJobCompany">Event Company</div>
+                <div class="poc-item value" id="displayVenue">Venue Name</div>
+            </div>
+
+            <!-- Job Description -->
+            <div class="job-description-display">
+                <strong>Job:</strong> <span id="displayJobDescription">Sound Operator</span>
+            </div>
+
+            <!-- Items Table -->
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>HOURS</th>
+                        <th>HOURLY RATE</th>
+                        <th>LINE TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTableBody">
+                    <!-- Items will be added here -->
+                </tbody>
+            </table>
+
+            <!-- Totals -->
+            <div class="totals-section">
+                <div class="totals-box">
+                    <div class="total-row">
+                        <span class="total-label">SUBTOTAL</span>
+                        <span class="total-value" id="displaySubtotal">AED 0</span>
+                    </div>
+                    <div class="total-row">
+                        <span class="total-label">TAX</span>
+                        <span class="total-value" id="displayTax">0%</span>
+                    </div>
+                    <div class="total-row final">
+                        <span class="total-label">TOTAL</span>
+                        <span class="total-value" id="displayTotal">AED 0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="invoice-footer">
+                <p class="payable-note">Make All check payable to <span id="displayPayableTo">HEMANTH KULAMULLATHIL</span></p>
+
+                <div class="bank-details">
+                    <h4>Bank Details</h4>
+                    <p>Account Holder Name: <span id="displayBankHolder">Hemanth Kulamullathil</span></p>
+                    <p>Bank Name: <span id="displayBankName">Mashreq Bank</span></p>
+                    <p>Account Number: <span id="displayAccountNumber">019010238158</span></p>
+                    <p>IBAN: <span id="displayIban">AE750330000019010238158</span></p>
+                </div>
+
+                <p class="payment-note">PAYMENT IS DUE WITHIN 30 DAYS OF THE INVOICE DATE.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

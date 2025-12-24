@@ -1,0 +1,724 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    font-size: 12px; /* 25% smaller base (was ~16px default) */
+}
+
+/* Editor Panel Styles - 700px wide */
+.editor-panel {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 700px;
+    height: 100vh;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+}
+
+.editor-panel h2 {
+    color: #1abc9c;
+    margin-bottom: 12px;
+    font-size: 1.3em;
+    border-bottom: 2px solid #1abc9c;
+    padding-bottom: 8px;
+}
+
+.editor-panel h3 {
+    color: #ecf0f1;
+    margin: 12px 0 6px;
+    font-size: 0.9em;
+}
+
+/* Saved Quotes Section */
+.saved-quotes-section {
+    margin-bottom: 10px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.saved-quotes-section select {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    background: #34495e;
+    color: white;
+}
+
+.delete-btn {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+.delete-btn:hover {
+    background: #c0392b;
+}
+
+/* Document Type + Rate Row */
+.doc-rate-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+/* Toggle Switch */
+.toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 60px;
+    height: 30px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #34495e;
+    transition: .4s;
+    border-radius: 30px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #1abc9c;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+.toggle-label {
+    font-size: 0.9em;
+}
+
+/* Rate Panel (inline) */
+.rate-panel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1a5f5a;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.rate-panel .currency {
+    font-weight: bold;
+    color: #1abc9c;
+}
+
+.rate-panel input {
+    width: 70px;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    background: #2c3e50;
+    color: #1abc9c;
+    font-size: 1em;
+    font-weight: bold;
+    text-align: center;
+}
+
+.rate-panel .per-hour {
+    color: #bdc3c7;
+    font-size: 0.9em;
+}
+
+.save-rate-btn {
+    background: #2c3e50;
+    color: #1abc9c;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+.save-rate-btn:hover {
+    background: #1abc9c;
+    color: white;
+}
+
+/* Two Column Layout */
+.two-columns {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 8px;
+}
+
+.two-columns .column {
+    flex: 1;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 8px;
+}
+
+.form-group.full-width {
+    margin-top: 8px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 0.85em;
+    color: #bdc3c7;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: 4px;
+    background: #34495e;
+    color: white;
+    font-size: 1em;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: 2px solid #1abc9c;
+}
+
+/* Generate Days Button */
+.generate-btn {
+    background: #1abc9c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.generate-btn:hover {
+    background: #16a085;
+}
+
+/* Line Items Section */
+.line-items-section {
+    background: #34495e;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.line-items-section .hint {
+    color: #7f8c8d;
+    font-style: italic;
+    text-align: center;
+    font-size: 0.95em;
+}
+
+.day-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid #2c3e50;
+}
+
+.day-item:last-child {
+    border-bottom: none;
+}
+
+.day-item .day-date {
+    min-width: 100px;
+    color: #1abc9c;
+    font-weight: 500;
+    font-size: 0.95em;
+}
+
+.day-item .hours-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.day-item .hours-input input {
+    width: 50px;
+    padding: 4px;
+    text-align: center;
+}
+
+.day-item .day-rate {
+    color: #bdc3c7;
+    font-size: 0.9em;
+}
+
+.day-item .day-total {
+    margin-left: auto;
+    color: #1abc9c;
+    font-weight: bold;
+}
+
+/* Totals Editor */
+.totals-editor {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.totals-editor .form-group {
+    margin-bottom: 0;
+    width: 120px;
+}
+
+.totals-display {
+    margin-left: auto;
+    text-align: right;
+    color: #1abc9c;
+    font-weight: bold;
+}
+
+.totals-display div {
+    margin-bottom: 5px;
+}
+
+/* Collapsible Section */
+.collapsible-section {
+    margin-bottom: 12px;
+}
+
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: #34495e;
+    border-radius: 4px;
+    margin: 0;
+}
+
+.collapsible-header:hover {
+    background: #3d566e;
+}
+
+.collapsible-header span {
+    font-size: 0.8em;
+    color: #1abc9c;
+}
+
+/* Bank Details Editor */
+.bank-details-editor {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    background: #34495e;
+    padding: 10px;
+    border-radius: 0 0 6px 6px;
+    margin-top: -4px;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.save-btn {
+    flex: 1;
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.save-btn:hover {
+    background: #219a52;
+}
+
+.print-btn {
+    flex: 1;
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.95em;
+}
+
+.print-btn:hover {
+    background: #2980b9;
+}
+
+/* Invoice Preview - adjusted for 700px sidebar */
+.invoice-container {
+    margin-left: 720px;
+    padding: 30px;
+}
+
+.invoice {
+    background: white;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+}
+
+/* Invoice Header */
+.invoice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 3px solid #1a5f5a;
+    padding-bottom: 15px;
+    margin-bottom: 10px;
+}
+
+.invoice-header h1 {
+    font-size: 1.8em;
+    color: #1a5f5a;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.invoice-label {
+    font-size: 1.8em;
+    color: #1a5f5a;
+    font-weight: bold;
+}
+
+/* Contact Bar */
+.contact-bar {
+    font-size: 0.75em;
+    color: #333;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.contact-bar span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.contact-bar .icon {
+    color: #1a5f5a;
+}
+
+/* Details Section */
+.details-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.details-left {
+    flex: 1;
+}
+
+.details-right {
+    text-align: right;
+    max-width: 250px;
+}
+
+.detail-row {
+    margin-bottom: 8px;
+}
+
+.detail-label {
+    font-weight: bold;
+    color: #333;
+    font-size: 0.85em;
+}
+
+.detail-value {
+    color: #555;
+    font-size: 0.85em;
+}
+
+/* POC Section */
+.poc-section {
+    display: flex;
+    margin-bottom: 0;
+}
+
+.poc-section.values {
+    margin-bottom: 15px;
+}
+
+.poc-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px;
+}
+
+.poc-item.header {
+    background: #1a5f5a;
+    color: white;
+    font-weight: bold;
+    font-size: 0.85em;
+}
+
+.poc-item.value {
+    background: #e8f5f3;
+    color: #1a5f5a;
+    font-weight: 500;
+    font-size: 0.85em;
+    border: 1px solid #1a5f5a;
+    border-top: none;
+}
+
+/* Job Description Display */
+.job-description-display {
+    background: #f5f5f5;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #1a5f5a;
+    font-size: 0.9em;
+}
+
+/* Items Table */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.items-table th {
+    background: #f5f5f5;
+    border-bottom: 2px solid #1a5f5a;
+    padding: 10px 8px;
+    text-align: left;
+    font-size: 0.8em;
+    color: #333;
+}
+
+.items-table th:last-child,
+.items-table th:nth-child(3),
+.items-table th:nth-child(2) {
+    text-align: right;
+}
+
+.items-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85em;
+}
+
+.items-table td:last-child,
+.items-table td:nth-child(3),
+.items-table td:nth-child(2) {
+    text-align: right;
+}
+
+/* Totals Section */
+.totals-section {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 30px;
+}
+
+.totals-box {
+    width: 250px;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.total-row.final {
+    font-weight: bold;
+    font-size: 1.1em;
+    border-bottom: 2px solid #1a5f5a;
+    color: #1a5f5a;
+}
+
+.total-label {
+    color: #666;
+}
+
+.total-value {
+    color: #1a5f5a;
+    font-weight: 600;
+}
+
+/* Footer */
+.invoice-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.payable-note {
+    color: #1a5f5a;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+}
+
+.bank-details h4 {
+    font-size: 0.85em;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.bank-details p {
+    font-size: 0.8em;
+    color: #555;
+    margin-bottom: 3px;
+}
+
+.payment-note {
+    margin-top: 20px;
+    font-size: 0.8em;
+    color: #333;
+}
+
+.payment-note::before {
+    content: "\2022  ";
+}
+
+/* Print Styles */
+@media print {
+    .editor-panel {
+        display: none !important;
+    }
+
+    .invoice-container {
+        margin-left: 0;
+        padding: 0;
+    }
+
+    .invoice {
+        box-shadow: none;
+        padding: 20px;
+        max-width: 100%;
+    }
+
+    body {
+        background: white;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Force background colors to print */
+    .poc-section {
+        display: table !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+
+    .poc-item {
+        display: table-cell !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .poc-item.header {
+        background: #1a5f5a !important;
+        color: white !important;
+    }
+
+    .poc-item.value {
+        background: #e8f5f3 !important;
+        color: #1a5f5a !important;
+        border: 1px solid #1a5f5a !important;
+    }
+
+    /* Ensure table headers print with backgrounds */
+    .items-table th {
+        background: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Job description bar */
+    .job-description-display {
+        background: #f5f5f5 !important;
+        border-left: 4px solid #1a5f5a !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    @page {
+        margin: 0.5in;
+    }
+}
+
+/* Scrollbar styling */
+.editor-panel::-webkit-scrollbar,
+.line-items-section::-webkit-scrollbar {
+    width: 8px;
+}
+
+.editor-panel::-webkit-scrollbar-track,
+.line-items-section::-webkit-scrollbar-track {
+    background: #1a252f;
+}
+
+.editor-panel::-webkit-scrollbar-thumb,
+.line-items-section::-webkit-scrollbar-thumb {
+    background: #1abc9c;
+    border-radius: 4px;
+}
+
+.editor-panel::-webkit-scrollbar-thumb:hover,
+.line-items-section::-webkit-scrollbar-thumb:hover {
+    background: #16a085;
+}
