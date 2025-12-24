@@ -28,14 +28,9 @@ fi
 echo "[2/3] Activating virtual environment..."
 source venv/bin/activate
 
-# Install dependencies if needed
-if [ ! -f "venv/.installed" ]; then
-    echo "[3/3] Installing dependencies..."
-    pip install -r requirements.txt --quiet
-    touch venv/.installed
-else
-    echo "[3/3] Dependencies already installed"
-fi
+# Always install/upgrade dependencies
+echo "[3/3] Installing dependencies..."
+pip3 install -r requirements.txt --quiet
 
 echo ""
 echo "=========================================="
@@ -45,4 +40,4 @@ echo "=========================================="
 echo ""
 
 # Run the Flask app
-python app.py
+python3 app.py
