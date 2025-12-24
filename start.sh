@@ -30,7 +30,7 @@ source venv/bin/activate
 
 # Always install/upgrade dependencies
 echo "[3/3] Installing dependencies..."
-pip3 install -r requirements.txt --quiet
+./venv/bin/pip install -r requirements.txt
 
 echo ""
 echo "=========================================="
@@ -40,4 +40,4 @@ echo "=========================================="
 echo ""
 
 # Run the Flask app
-python3 app.py
+./venv/bin/python app.py
