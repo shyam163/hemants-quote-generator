@@ -150,6 +150,35 @@ United Arab Emirates</textarea>
             </div>
         </div>
 
+        <!-- Color Palette -->
+        <div class="collapsible-section">
+            <h3 class="collapsible-header" onclick="togglePalette()">
+                Color Palette <span id="paletteToggleIcon">▶</span>
+            </h3>
+            <div class="palette-editor" id="paletteContent" style="display: none;">
+                <div class="palette-presets">
+                    <label>Presets:</label>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="applyPalette('teal')" style="background: #1a5f5a;">Teal</button>
+                        <button class="preset-btn" onclick="applyPalette('navy')" style="background: #1a3a5f;">Navy</button>
+                        <button class="preset-btn" onclick="applyPalette('maroon')" style="background: #5f1a1a;">Maroon</button>
+                        <button class="preset-btn" onclick="applyPalette('purple')" style="background: #4a1a5f;">Purple</button>
+                        <button class="preset-btn" onclick="applyPalette('forest')" style="background: #2d5f1a;">Forest</button>
+                    </div>
+                </div>
+                <div class="palette-custom">
+                    <div class="color-input">
+                        <label>Primary Color:</label>
+                        <input type="color" id="primaryColor" value="#1a5f5a" onchange="applyCustomColor()">
+                    </div>
+                    <div class="color-input">
+                        <label>Accent Color:</label>
+                        <input type="color" id="accentColor" value="#e8f5f3" onchange="applyCustomColor()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button class="save-btn" onclick="saveQuote()">Save Quote</button>
@@ -162,7 +191,10 @@ United Arab Emirates</textarea>
         <div class="invoice">
             <!-- Header -->
             <div class="invoice-header">
-                <h1>HEMANTH KULAMULLATHIL</h1>
+                <div class="header-left">
+                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" class="header-logo">
+                    <h1>HEMANTH KULAMULLATHIL</h1>
+                </div>
                 <span class="invoice-label" id="docTypeLabel">QUOTE</span>
             </div>
 

@@ -16,6 +16,93 @@ function toggleBankDetails() {
     }
 }
 
+// Toggle palette section
+function togglePalette() {
+    const content = document.getElementById('paletteContent');
+    const icon = document.getElementById('paletteToggleIcon');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+// Color palettes
+const palettes = {
+    teal: { primary: '#1a5f5a', accent: '#e8f5f3' },
+    navy: { primary: '#1a3a5f', accent: '#e8f0f5' },
+    maroon: { primary: '#5f1a1a', accent: '#f5e8e8' },
+    purple: { primary: '#4a1a5f', accent: '#f0e8f5' },
+    forest: { primary: '#2d5f1a', accent: '#ecf5e8' }
+};
+
+// Apply preset palette
+function applyPalette(name) {
+    const palette = palettes[name];
+    if (palette) {
+        document.getElementById('primaryColor').value = palette.primary;
+        document.getElementById('accentColor').value = palette.accent;
+        applyColors(palette.primary, palette.accent);
+    }
+}
+
+// Apply custom colors
+function applyCustomColor() {
+    const primary = document.getElementById('primaryColor').value;
+    const accent = document.getElementById('accentColor').value;
+    applyColors(primary, accent);
+}
+
+// Apply colors to invoice
+function applyColors(primary, accent) {
+    const invoice = document.querySelector('.invoice');
+    invoice.style.setProperty('--primary-color', primary);
+    invoice.style.setProperty('--accent-color', accent);
+
+    // Update elements that use primary color
+    document.querySelectorAll('.invoice-header, .invoice-header h1, .header-logo').forEach(el => {
+        el.style.borderColor = primary;
+        if (el.tagName === 'H1') el.style.color = primary;
+    });
+    document.querySelector('.invoice-header').style.borderBottomColor = primary;
+    document.querySelector('.invoice-label').style.color = primary;
+
+    // POC headers
+    document.querySelectorAll('.poc-item.header').forEach(el => {
+        el.style.backgroundColor = primary;
+    });
+
+    // POC values
+    document.querySelectorAll('.poc-item.value').forEach(el => {
+        el.style.backgroundColor = accent;
+        el.style.color = primary;
+        el.style.borderColor = primary;
+    });
+
+    // Job description
+    const jobDesc = document.querySelector('.job-description-display');
+    if (jobDesc) jobDesc.style.borderLeftColor = primary;
+
+    // Table header
+    document.querySelectorAll('.items-table th').forEach(el => {
+        el.style.borderBottomColor = primary;
+    });
+
+    // Totals
+    document.querySelectorAll('.total-row.final').forEach(el => {
+        el.style.borderBottomColor = primary;
+        el.style.color = primary;
+    });
+    document.querySelectorAll('.total-value').forEach(el => {
+        el.style.color = primary;
+    });
+
+    // Footer
+    document.querySelector('.payable-note').style.color = primary;
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Set today's date
