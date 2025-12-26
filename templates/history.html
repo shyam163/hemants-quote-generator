@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quote History - Quantum Quote Generator</title>
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/favicon.jpg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=18">
+    <style>
+        /* History Page Specific Styles */
+        body {
+            background: #0f1419;
+            display: flex !important;
+            flex-direction: column !important;
+            grid-template-columns: none !important;
+        }
+
+        .history-container {
+            display: flex;
+            flex: 1;
+            min-height: calc(100vh - 56px);
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .history-sidebar {
+            width: 250px;
+            min-width: 250px;
+            max-width: 250px;
+            background: #1a252f;
+            padding: 20px;
+            border-right: 1px solid #2c3e50;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .history-main {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            background: #0f1419;
+            min-width: 0;
+        }
+
+        .filter-section {
+            margin-bottom: 24px;
+        }
+
+        .filter-section h3 {
+            color: #1abc9c;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2c3e50;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-group label {
+            display: block;
+            color: #bdc3c7;
+            font-size: 0.85em;
+            margin-bottom: 6px;
+        }
+
+        .filter-group select,
+        .filter-group input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            background: #2c3e50;
+            border: 1px solid #3d5a6c;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9em;
+        }
+
+        .filter-group select:focus,
+        .filter-group input[type="date"]:focus {
+            outline: none;
+            border-color: #1abc9c;
+        }
+
+        .filter-radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: #2c3e50;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .filter-radio-group label:hover {
+            background: #3d5a6c;
+        }
+
+        .filter-radio-group input[type="radio"] {
+            accent-color: #1abc9c;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-filter {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .btn-apply {
+            background: #1abc9c;
+            color: #fff;
+        }
+
+        .btn-apply:hover {
+            background: #16a085;
+        }
+
+        .btn-clear {
+            background: #3d5a6c;
+            color: #fff;
+        }
+
+        .btn-clear:hover {
+            background: #4a6b7a;
+        }
+
+        /* Quote Cards Grid */
+        .quotes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .quotes-header h2 {
+            color: #fff;
+            font-size: 1.4em;
+        }
+
+        .quotes-count {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        #quotesContainer {
+            width: 100%;
+        }
+
+        .quote-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+
+        .quote-card {
+            background: #1a252f;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid #2c3e50;
+        }
+
+        .quote-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            border-color: #1abc9c;
+        }
+
+        .quote-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .quote-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .quote-badge.quote {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .quote-badge.invoice {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+        }
+
+        .quote-number {
+            color: #bdc3c7;
+            font-size: 0.8em;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .quote-company {
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .quote-date {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            margin-bottom: 12px;
+        }
+
+        .quote-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-top: 12px;
+            border-top: 1px solid #2c3e50;
+        }
+
+        .quote-total {
+            color: #1abc9c;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .quote-description {
+            color: #7f8c8d;
+            font-size: 0.85em;
+            max-width: 60%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: #bdc3c7;
+            margin-bottom: 10px;
+        }
+
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #2c3e50;
+            border-top-color: #1abc9c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .history-container {
+                flex-direction: column;
+            }
+
+            .history-sidebar {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #2c3e50;
+                max-height: none;
+            }
+
+            .mobile-filter-toggle {
+                display: block;
+                width: 100%;
+                padding: 12px;
+                background: #2c3e50;
+                border: none;
+                color: #fff;
+                font-size: 0.95em;
+                cursor: pointer;
+                margin-bottom: 10px;
+                border-radius: 6px;
+            }
+
+            .filter-content {
+                display: none;
+            }
+
+            .filter-content.show {
+                display: block;
+            }
+
+            .quote-cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-filter-toggle {
+                display: none;
+            }
+
+            .filter-content {
+                display: block !important;
+            }
+        }
+
+        /* Light Mode */
+        body.light-mode {
+            background: #fff;
+        }
+
+        body.light-mode .history-sidebar {
+            background: #f5f5f5;
+            border-color: #ddd;
+        }
+
+        body.light-mode .history-main {
+            background: #fff;
+        }
+
+        body.light-mode .filter-section h3 {
+            color: #1a5f5a;
+            border-color: #ddd;
+        }
+
+        body.light-mode .filter-group label {
+            color: #555;
+        }
+
+        body.light-mode .filter-group select,
+        body.light-mode .filter-group input[type="date"] {
+            background: #fff;
+            border-color: #ddd;
+            color: #333;
+        }
+
+        body.light-mode .filter-radio-group label {
+            background: #e9e9e9;
+            color: #333;
+        }
+
+        body.light-mode .filter-radio-group label:hover {
+            background: #ddd;
+        }
+
+        body.light-mode .quote-card {
+            background: #fff;
+            border-color: #ddd;
+        }
+
+        body.light-mode .quote-card:hover {
+            border-color: #1a5f5a;
+        }
+
+        body.light-mode .quote-company {
+            color: #333;
+        }
+
+        body.light-mode .quote-number {
+            color: #666;
+        }
+
+        body.light-mode .quote-card-footer {
+            border-color: #eee;
+        }
+
+        body.light-mode .quotes-header h2 {
+            color: #333;
+        }
+
+        body.light-mode .btn-clear {
+            background: #ddd;
+            color: #333;
+        }
+
+        /* Recycle Bin Button */
+        .recycle-bin-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: #2c3e50;
+            border: 1px solid #3d5a6c;
+            border-radius: 8px;
+            color: #bdc3c7;
+            font-size: 0.95em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .recycle-bin-btn:hover {
+            background: #3d5a6c;
+            border-color: #1abc9c;
+        }
+
+        .recycle-bin-btn.active {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: #fff;
+        }
+
+        .recycle-bin-btn .bin-icon {
+            font-size: 1.2em;
+        }
+
+        .recycle-bin-btn .bin-count {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.85em;
+        }
+
+        body.light-mode .recycle-bin-btn {
+            background: #e9e9e9;
+            border-color: #ddd;
+            color: #555;
+        }
+
+        body.light-mode .recycle-bin-btn:hover {
+            background: #ddd;
+        }
+
+        /* Delete Button on Cards */
+        .quote-card-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+
+        .quote-card:hover .quote-card-actions {
+            opacity: 1;
+        }
+
+        .quote-card {
+            position: relative;
+        }
+
+        /* Adjust header to not be overlapped by action button */
+        .quote-card-header {
+            padding-right: 40px;
+        }
+
+        .btn-card-action {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            transition: all 0.2s;
+            margin-left: 4px;
+        }
+
+        .btn-delete {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        .btn-delete:hover {
+            background: #e74c3c;
+            color: #fff;
+        }
+
+        .btn-restore {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .btn-restore:hover {
+            background: #2ecc71;
+            color: #fff;
+        }
+
+        /* Trash Header Actions */
+        .trash-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .btn-clear-trash {
+            padding: 8px 16px;
+            background: #e74c3c;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-clear-trash:hover {
+            background: #c0392b;
+        }
+
+        .btn-back-to-quotes {
+            padding: 8px 16px;
+            background: #3d5a6c;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-back-to-quotes:hover {
+            background: #4a6b7a;
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            padding: 14px 20px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+            max-width: 350px;
+        }
+
+        .toast.success {
+            background: #27ae60;
+        }
+
+        .toast.error {
+            background: #e74c3c;
+        }
+
+        .toast.info {
+            background: #3498db;
+        }
+
+        .toast-icon {
+            font-size: 1.2em;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <div class="nav-left">
+            <span class="nav-title">Quantum Quote Generator</span>
+        </div>
+        <div class="nav-right">
+            <span class="nav-user">{{ current_user.email }}</span>
+            <a href="/" class="nav-link">Quotes</a>
+            <a href="/history" class="nav-link" style="background: #1a5f5a; color: #fff;">History</a>
+            <a href="/profile" class="nav-link">Profile</a>
+            {% if current_user.role == 'admin' %}
+            <a href="/admin" class="nav-link">Admin</a>
+            {% endif %}
+            <a href="/logout" class="nav-link nav-logout">Logout</a>
+            <div class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                <span class="theme-icon" id="themeIcon">🌙</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="history-container">
+        <!-- Sidebar Filters -->
+        <aside class="history-sidebar">
+            <button class="mobile-filter-toggle" onclick="toggleFilters()">
+                🔍 Filters <span id="filterToggleIcon">▼</span>
+            </button>
+
+            <!-- Recycle Bin Button -->
+            <button class="recycle-bin-btn" id="recycleBinBtn" onclick="toggleRecycleBin()">
+                <span class="bin-icon">🗑️</span>
+                <span id="recycleBinLabel">Recycle Bin</span>
+                <span class="bin-count" id="trashCount">0</span>
+            </button>
+
+            <div class="filter-content" id="filterContent">
+                <div class="filter-section">
+                    <h3>Filter Quotes</h3>
+
+                    <div class="filter-group">
+                        <label>Company</label>
+                        <select id="filterCompany" onchange="applyFilters()">
+                            <option value="">All Companies</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>From Date</label>
+                        <input type="date" id="filterDateFrom" onchange="applyFilters()">
+                    </div>
+
+                    <div class="filter-group">
+                        <label>To Date</label>
+                        <input type="date" id="filterDateTo" onchange="applyFilters()">
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h3>Document Type</h3>
+                    <div class="filter-radio-group">
+                        <label>
+                            <input type="radio" name="docType" value="" checked onchange="applyFilters()">
+                            <span>All</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="docType" value="QUOTE" onchange="applyFilters()">
+                            <span>Quotes Only</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="docType" value="INVOICE" onchange="applyFilters()">
+                            <span>Invoices Only</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <h3>Sort By</h3>
+                    <div class="filter-group">
+                        <select id="filterSort" onchange="applyFilters()">
+                            <option value="date_desc">Date (Newest First)</option>
+                            <option value="date_asc">Date (Oldest First)</option>
+                            <option value="total_desc">Amount (High to Low)</option>
+                            <option value="total_asc">Amount (Low to High)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-buttons">
+                    <button class="btn-filter btn-clear" onclick="clearFilters()">Clear All</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="history-main">
+            <div class="quotes-header">
+                <h2>Quote History</h2>
+                <span class="quotes-count" id="quotesCount">Loading...</span>
+            </div>
+
+            <div id="quotesContainer">
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Loading quotes...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // State
+        let isViewingTrash = false;
+        let trashCount = 0;
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Remove toast after animation completes
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Theme Management
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            const isLightMode = body.classList.toggle('light-mode');
+            themeIcon.textContent = isLightMode ? '☀️' : '🌙';
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+        }
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('themeIcon');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                if (themeIcon) themeIcon.textContent = '☀️';
+            }
+        }
+
+        // Mobile filter toggle
+        function toggleFilters() {
+            const content = document.getElementById('filterContent');
+            const icon = document.getElementById('filterToggleIcon');
+            content.classList.toggle('show');
+            icon.textContent = content.classList.contains('show') ? '▲' : '▼';
+        }
+
+        // Load companies for filter dropdown
+        async function loadCompanies() {
+            try {
+                const response = await fetch('/api/companies');
+                const companies = await response.json();
+                const select = document.getElementById('filterCompany');
+
+                companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.name;
+                    option.textContent = company.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading companies:', error);
+            }
+        }
+
+        // Format date for display
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return 'AED ' + (amount || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // Format invoice number to full form: 002-MICR-DEC-2025
+        function formatInvoiceNumber(quote) {
+            if (!quote.invoice_number) return 'N/A';
+
+            // Pad the number to 3 digits
+            const num = String(quote.invoice_number).padStart(3, '0');
+
+            // Get company code (first 4 letters, uppercase)
+            const company = quote.client_company || 'NONE';
+            const companyCode = company.replace(/[^a-zA-Z]/g, '').substring(0, 4).toUpperCase() || 'NONE';
+
+            // Get month and year from date
+            if (quote.date) {
+                const date = new Date(quote.date);
+                const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+                const year = date.getFullYear();
+                return `${num}-${companyCode}-${month}-${year}`;
+            }
+
+            return `${num}-${companyCode}`;
+        }
+
+        // Render quote cards
+        function renderQuotes(quotes) {
+            const container = document.getElementById('quotesContainer');
+            const countEl = document.getElementById('quotesCount');
+            const headerEl = document.querySelector('.quotes-header h2');
+
+            // Update header based on view
+            if (isViewingTrash) {
+                headerEl.textContent = 'Recycle Bin';
+                countEl.innerHTML = quotes.length > 0
+                    ? `${quotes.length} item${quotes.length !== 1 ? 's' : ''} in trash <button class="btn-clear-trash" onclick="clearTrash()">🗑️ Clear All</button>`
+                    : '';
+            } else {
+                headerEl.textContent = 'Quote History';
+                countEl.textContent = `${quotes.length} quote${quotes.length !== 1 ? 's' : ''} found`;
+            }
+
+            if (quotes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">${isViewingTrash ? '🗑️' : '📋'}</div>
+                        <h3>${isViewingTrash ? 'Recycle bin is empty' : 'No quotes found'}</h3>
+                        <p>${isViewingTrash ? 'Deleted quotes will appear here.' : 'Try adjusting your filters or create a new quote.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="quote-cards-grid">
+                    ${quotes.map(quote => `
+                        <div class="quote-card" onclick="openQuote(${quote.id})">
+                            <div class="quote-card-actions">
+                                ${isViewingTrash
+                                    ? `<button class="btn-card-action btn-restore" onclick="event.stopPropagation(); restoreQuote(${quote.id})" title="Restore">↩️</button>`
+                                    : `<button class="btn-card-action btn-delete" onclick="event.stopPropagation(); trashQuote(${quote.id})" title="Delete">🗑️</button>`
+                                }
+                            </div>
+                            <div class="quote-card-header">
+                                <span class="quote-badge ${quote.doc_type.toLowerCase()}">${quote.doc_type}</span>
+                                <span class="quote-number">${formatInvoiceNumber(quote)}</span>
+                            </div>
+                            <div class="quote-company">${quote.client_company || 'No Client'}</div>
+                            <div class="quote-date">${formatDate(quote.date)}</div>
+                            <div class="quote-card-footer">
+                                <span class="quote-total">${formatCurrency(quote.total)}</span>
+                                <span class="quote-description">${quote.job_description || ''}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Load quotes with filters
+        async function loadQuotes() {
+            const container = document.getElementById('quotesContainer');
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>Loading ${isViewingTrash ? 'trash' : 'quotes'}...</p>
+                </div>
+            `;
+
+            try {
+                // Build query params
+                const params = new URLSearchParams();
+
+                // Add trash filter if viewing recycle bin
+                if (isViewingTrash) {
+                    params.append('trash', 'true');
+                } else {
+                    const company = document.getElementById('filterCompany').value;
+                    if (company) params.append('company', company);
+
+                    const docType = document.querySelector('input[name="docType"]:checked').value;
+                    if (docType) params.append('doc_type', docType);
+
+                    const dateFrom = document.getElementById('filterDateFrom').value;
+                    if (dateFrom) params.append('date_from', dateFrom);
+
+                    const dateTo = document.getElementById('filterDateTo').value;
+                    if (dateTo) params.append('date_to', dateTo);
+
+                    const sort = document.getElementById('filterSort').value;
+                    if (sort) params.append('sort', sort);
+                }
+
+                const url = '/api/quotes' + (params.toString() ? '?' + params.toString() : '');
+                const response = await fetch(url);
+
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const quotes = await response.json();
+                renderQuotes(quotes);
+            } catch (error) {
+                console.error('Error loading quotes:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <h3>Error loading quotes</h3>
+                        <p>Please try refreshing the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Update trash count in sidebar
+        async function updateTrashCount() {
+            try {
+                const response = await fetch('/api/quotes?trash=true');
+                const trashedQuotes = await response.json();
+                trashCount = trashedQuotes.length;
+                document.getElementById('trashCount').textContent = trashCount;
+            } catch (error) {
+                console.error('Error updating trash count:', error);
+            }
+        }
+
+        // Toggle recycle bin view
+        function toggleRecycleBin() {
+            isViewingTrash = !isViewingTrash;
+            const btn = document.getElementById('recycleBinBtn');
+            const label = document.getElementById('recycleBinLabel');
+            const filterContent = document.getElementById('filterContent');
+
+            if (isViewingTrash) {
+                btn.classList.add('active');
+                label.textContent = 'Back to Quotes';
+                filterContent.style.display = 'none';
+            } else {
+                btn.classList.remove('active');
+                label.textContent = 'Recycle Bin';
+                filterContent.style.display = '';
+            }
+
+            loadQuotes();
+        }
+
+        // Move quote to trash
+        async function trashQuote(quoteId) {
+            try {
+                const response = await fetch(`/api/quotes/${quoteId}/trash`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showToast('Quote moved to recycle bin', 'success');
+                    loadQuotes();
+                    updateTrashCount();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Error moving to trash', 'error');
+                }
+            } catch (error) {
+                console.error('Error trashing quote:', error);
+                showToast('Error moving to trash', 'error');
+            }
+        }
+
+        // Restore quote from trash
+        async function restoreQuote(quoteId) {
+            try {
+                const response = await fetch(`/api/quotes/${quoteId}/restore`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    showToast('Quote restored successfully', 'success');
+                    loadQuotes();
+                    updateTrashCount();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Error restoring quote', 'error');
+                }
+            } catch (error) {
+                console.error('Error restoring quote:', error);
+                showToast('Error restoring quote', 'error');
+            }
+        }
+
+        // Clear all trash
+        async function clearTrash() {
+            if (!confirm('Are you sure you want to permanently delete all items in the recycle bin? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/quotes/trash', {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showToast(`${data.count} quote(s) permanently deleted`, 'success');
+                    loadQuotes();
+                    updateTrashCount();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Error clearing trash', 'error');
+                }
+            } catch (error) {
+                console.error('Error clearing trash:', error);
+                showToast('Error clearing trash', 'error');
+            }
+        }
+
+        // Apply filters (called on filter change)
+        function applyFilters() {
+            loadQuotes();
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            document.getElementById('filterCompany').value = '';
+            document.getElementById('filterDateFrom').value = '';
+            document.getElementById('filterDateTo').value = '';
+            document.getElementById('filterSort').value = 'date_desc';
+            document.querySelector('input[name="docType"][value=""]').checked = true;
+            loadQuotes();
+        }
+
+        // Open quote for editing
+        function openQuote(quoteId) {
+            window.location.href = '/?quote=' + quoteId;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            loadCompanies();
+            loadQuotes();
+            updateTrashCount();
+        });
+    </script>
+</body>
+</html>

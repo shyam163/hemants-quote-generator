@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Quote Generator</title>
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/favicon.jpg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a5f5a 0%, #0d2f2d 100%);
+            overflow: hidden;
+        }
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+        }
+        .login-container h1 {
+            color: #1a5f5a;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .login-container .form-group {
+            margin-bottom: 20px;
+        }
+        .login-container label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .login-container input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #ffffff;
+            color: #333;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .login-container input:focus {
+            outline: none;
+            border-color: #1a5f5a;
+            box-shadow: 0 0 0 2px rgba(26, 95, 90, 0.1);
+        }
+        .login-container button {
+            width: 100%;
+            padding: 14px;
+            background: #1abc9c;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-container button:hover {
+            background: #16a085;
+        }
+        .error-message {
+            background: #e74c3c;
+            color: #fff;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+            font-size: 13px;
+        }
+        .login-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .login-logo img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #1abc9c;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="login-container">
+        <div class="login-logo">
+            <img src="{{ url_for('static', filename='images/site-logo.jpg') }}" alt="Logo">
+        </div>
+        <h1>Quantum Quote Generator</h1>
+
+        {% if error %}
+        <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+
+        <div class="login-footer">
+            Contact Hemant if you need an account
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 150 };
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Track mouse position
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mouseout', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        // Particle class
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.density = Math.random() * 30 + 1;
+                this.alpha = Math.random() * 0.5 + 0.2;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(26, 188, 156, ${this.alpha})`;
+                ctx.fill();
+            }
+
+            update() {
+                // Gentle floating motion
+                this.baseX += this.speedX;
+                this.baseY += this.speedY;
+
+                // Wrap around edges
+                if (this.baseX < 0) this.baseX = width;
+                if (this.baseX > width) this.baseX = 0;
+                if (this.baseY < 0) this.baseY = height;
+                if (this.baseY > height) this.baseY = 0;
+
+                // Mouse interaction
+                if (mouse.x !== null && mouse.y !== null) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < mouse.radius) {
+                        let force = (mouse.radius - distance) / mouse.radius;
+                        let dirX = dx / distance;
+                        let dirY = dy / distance;
+
+                        // Push particles away from mouse
+                        this.x -= dirX * force * this.density * 0.5;
+                        this.y -= dirY * force * this.density * 0.5;
+                    } else {
+                        // Return to base position smoothly
+                        if (this.x !== this.baseX) {
+                            let dx = this.baseX - this.x;
+                            this.x += dx * 0.05;
+                        }
+                        if (this.y !== this.baseY) {
+                            let dy = this.baseY - this.y;
+                            this.y += dy * 0.05;
+                        }
+                    }
+                } else {
+                    // Return to base when mouse is out
+                    if (this.x !== this.baseX) {
+                        let dx = this.baseX - this.x;
+                        this.x += dx * 0.05;
+                    }
+                    if (this.y !== this.baseY) {
+                        let dy = this.baseY - this.y;
+                        this.y += dy * 0.05;
+                    }
+                }
+            }
+        }
+
+        // Create particles
+        function initParticles() {
+            particles = [];
+            let numberOfParticles = (width * height) / 8000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        // Draw connections between nearby particles
+        function connectParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 120) {
+                        let alpha = (120 - distance) / 120 * 0.3;
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(26, 188, 156, ${alpha})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            connectParticles();
+
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+
+        // Reinit on resize
+        window.addEventListener('resize', () => {
+            resize();
+            initParticles();
+        });
+    </script>
+</body>
+</html>

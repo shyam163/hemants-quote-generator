@@ -3,14 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hemant's Quote Generator</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Quantum Quote Generator</title>
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/favicon.jpg') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=21">
 </head>
 <body>
+    <!-- Navigation Bar -->
+    <nav class="main-nav">
+        <div class="nav-left">
+            <span class="nav-title">Quantum Quote Generator</span>
+        </div>
+        <div class="nav-right">
+            <span class="nav-user">{{ current_user.email }}</span>
+            <a href="/history" class="nav-link">History</a>
+            <a href="/profile" class="nav-link">Profile</a>
+            {% if current_user.role == 'admin' %}
+            <a href="/admin" class="nav-link">Admin</a>
+            {% endif %}
+            <a href="/logout" class="nav-link nav-logout">Logout</a>
+            <!-- Dark/Light Theme Toggle (extreme right) -->
+            <div class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                <span class="theme-icon" id="themeIcon">🌙</span>
+            </div>
+        </div>
+    </nav>
+
     <!-- Editor Panel (700px wide) -->
     <div class="editor-panel">
-        <h2>Hemant's Quote Generator</h2>
-
         <!-- Saved Quotes Dropdown -->
         <div class="saved-quotes-section">
             <select id="savedQuotes" onchange="loadQuote(this.value)">
@@ -19,8 +38,8 @@
             <button class="delete-btn" onclick="deleteCurrentQuote()" title="Delete selected quote">Delete</button>
         </div>
 
-        <!-- Document Type Toggle + Hourly Rate (side by side) -->
-        <div class="doc-rate-row">
+        <!-- Row 1: Document Type and Billing Type Toggles -->
+        <div class="toggle-row">
             <div class="toggle-container">
                 <span class="toggle-label">Quote</span>
                 <label class="toggle-switch">
@@ -29,26 +48,83 @@
                 </label>
                 <span class="toggle-label">Invoice</span>
             </div>
-            <div class="rate-panel">
+            <div class="toggle-container">
+                <span class="toggle-label">Hourly</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="billingType" onchange="toggleBillingType()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Daily</span>
+            </div>
+        </div>
+
+        <!-- Row 2: Rate Inputs -->
+        <div class="rate-row">
+            <!-- Hourly Rate Panel (shown when billing type is hourly) -->
+            <div class="rate-panel" id="hourlyRateGroup">
+                <span class="rate-label">Rate:</span>
                 <span class="currency">AED</span>
                 <input type="number" id="hourlyRate" value="200" min="0" onchange="updatePreview()">
                 <span class="per-hour">/ hr</span>
-                <button class="save-rate-btn" onclick="saveHourlyRate()">Save</button>
+            </div>
+            <!-- Daily Rate Panel (shown when billing type is daily) -->
+            <div class="rate-panel" id="dailyRateGroup" style="display: none;">
+                <span class="rate-label">Day Rate:</span>
+                <span class="currency">AED</span>
+                <input type="number" id="dailyRate" value="1600" min="0" onchange="updatePreview()">
+                <span class="per-hour">/ day</span>
+                <span class="rate-separator">|</span>
+                <span class="rate-label">OT Rate:</span>
+                <span class="currency">AED</span>
+                <input type="number" id="otHourlyRate" value="220" min="0" onchange="updatePreview()">
+                <span class="per-hour">/ hr</span>
+            </div>
+        </div>
+
+        <!-- Overtime Settings Row -->
+        <div class="overtime-settings-row">
+            <div class="setting-group">
+                <label>Call Time:</label>
+                <select id="regularCallHours" onchange="updatePreview()">
+                    <option value="8" selected>8 hrs</option>
+                    <option value="9">9 hrs</option>
+                    <option value="10">10 hrs</option>
+                    <option value="11">11 hrs</option>
+                    <option value="12">12 hrs</option>
+                </select>
+            </div>
+            <div class="setting-group" id="otPercentageGroup">
+                <label>OT Rate:</label>
+                <select id="overtimePercentage" onchange="updatePreview()">
+                    <option value="10" selected>+10%</option>
+                    <option value="15">+15%</option>
+                    <option value="20">+20%</option>
+                </select>
+            </div>
+            <div class="setting-group per-diem-input">
+                <input type="checkbox" id="perDiemEnabled" onchange="updatePreview()">
+                <span class="rate-label">Per Diem:</span>
+                <span class="currency">AED</span>
+                <input type="number" id="perDiemRate" value="150" min="0" onchange="updatePreview()">
+                <span class="per-hour">/ day</span>
             </div>
         </div>
 
         <!-- Two Column Layout -->
         <div class="two-columns">
-            <!-- Left Column -->
+            <!-- Column 1: Document Details + Work Period -->
             <div class="column">
                 <h3>Document Details</h3>
                 <div class="form-group">
                     <label>Date</label>
-                    <input type="date" id="invoiceDate" onchange="updatePreview()">
+                    <input type="date" id="invoiceDate" onchange="updatePreview(); updateInvoicePreview()">
                 </div>
                 <div class="form-group">
                     <label>Invoice #</label>
-                    <input type="text" id="invoiceNumber" value="01" onchange="updatePreview()">
+                    <div class="invoice-number-wrapper">
+                        <input type="text" id="invoiceNumber" value="01" maxlength="3" onchange="updatePreview(); updateInvoicePreview()" oninput="updateInvoicePreview()" placeholder="001" style="width: 60px; text-align: center;">
+                        <span id="invoiceNumberPreview" class="invoice-number-preview">-NONE-DEC-2025</span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>PO #</label>
@@ -58,14 +134,30 @@
                     <label>Job ID</label>
                     <input type="text" id="jobId" value="EVS 00-00000" onchange="updatePreview()">
                 </div>
+
+                <h3>Work Period</h3>
+                <div class="form-group">
+                    <label>From Date</label>
+                    <input type="date" id="dateFrom" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>To Date</label>
+                    <input type="date" id="dateTo" onchange="updatePreview()">
+                </div>
+                <button class="generate-btn" onclick="generateDays()">Generate Days</button>
             </div>
 
-            <!-- Right Column -->
+            <!-- Column 2: Client Details + Job Description -->
             <div class="column">
                 <h3>Client Details</h3>
                 <div class="form-group">
                     <label>Company Name</label>
-                    <input type="text" id="clientCompany" value="Company Name" onchange="updatePreview()">
+                    <div class="company-select-wrapper">
+                        <select id="clientCompany" onchange="onCompanySelect()">
+                            <option value="">-- Select Company --</option>
+                        </select>
+                        <button type="button" class="add-company-btn" onclick="showAddCompanyModal()" title="Add new company">+</button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Address</label>
@@ -78,27 +170,18 @@ United Arab Emirates</textarea>
                     <input type="text" id="poc" value="Contact Name" onchange="updatePreview()">
                 </div>
                 <div class="form-group">
+                    <label>POC Phone</label>
+                    <input type="tel" id="pocPhone" value="+971 50 000 0000" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
+                    <label>POC Email</label>
+                    <input type="email" id="pocEmail" value="contact@company.com" onchange="updatePreview()">
+                </div>
+                <div class="form-group">
                     <label>Venue</label>
                     <input type="text" id="venue" value="Venue Name" onchange="updatePreview()">
                 </div>
-            </div>
-        </div>
 
-        <!-- Work Period and Job Description -->
-        <div class="two-columns">
-            <div class="column">
-                <h3>Work Period</h3>
-                <div class="form-group">
-                    <label>From Date</label>
-                    <input type="date" id="dateFrom" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>To Date</label>
-                    <input type="date" id="dateTo" onchange="updatePreview()">
-                </div>
-                <button class="generate-btn" onclick="generateDays()">Generate Days</button>
-            </div>
-            <div class="column">
                 <h3>Job Description</h3>
                 <div class="form-group">
                     <label>Description</label>
@@ -107,82 +190,166 @@ United Arab Emirates</textarea>
             </div>
         </div>
 
-        <!-- Hours Per Day -->
-        <h3>Hours Per Day</h3>
-        <div class="line-items-section" id="lineItemsContainer">
-            <p class="hint">Select date range and click "Generate Days"</p>
+        <!-- Settings Row: Tax, Bank Details, Color Palette -->
+        <div class="settings-row">
+            <!-- Tax and Totals -->
+            <div class="tax-totals-section">
+                <div class="tax-inline">
+                    <label>Tax(%)</label>
+                    <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
+                </div>
+                <div class="totals-display">
+                    <div>Total: <span id="editorTotal">AED 0</span></div>
+                </div>
+            </div>
+
+            <!-- Bank Details (Collapsible) -->
+            <div class="collapsible-section">
+                <h3 class="collapsible-header" onclick="toggleBankDetails()">
+                    Banking <span id="bankToggleIcon">▶</span>
+                </h3>
+            </div>
+
+            <!-- Color Palette -->
+            <div class="collapsible-section">
+                <h3 class="collapsible-header" onclick="togglePalette()">
+                    Palette <span id="paletteToggleIcon">▶</span>
+                </h3>
+            </div>
+
+            <!-- Background Image -->
+            <div class="collapsible-section">
+                <h3 class="collapsible-header" onclick="toggleBackground()">
+                    Background <span id="bgToggleIcon">▶</span>
+                </h3>
+            </div>
         </div>
 
-        <!-- Tax and Totals -->
-        <div class="totals-editor">
+        <!-- Expanded Panels (Full Width) -->
+        <div class="bank-details-editor" id="bankDetailsContent" style="display: none;">
             <div class="form-group">
-                <label>Tax Rate (%)</label>
-                <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
+                <label>Account Holder</label>
+                <input type="text" id="bankAccountHolder" placeholder="Account holder name" onchange="updatePreview()">
             </div>
-            <div class="totals-display">
-                <div>Subtotal: <span id="editorSubtotal">AED 0</span></div>
-                <div>Total: <span id="editorTotal">AED 0</span></div>
+            <div class="form-group">
+                <label>Bank Name</label>
+                <input type="text" id="bankName" placeholder="Bank name" onchange="updatePreview()">
             </div>
-        </div>
-
-        <!-- Bank Details (Collapsible) -->
-        <div class="collapsible-section">
-            <h3 class="collapsible-header" onclick="toggleBankDetails()">
-                Bank Details <span id="bankToggleIcon">▶</span>
-            </h3>
-            <div class="bank-details-editor" id="bankDetailsContent" style="display: none;">
-                <div class="form-group">
-                    <label>Account Holder</label>
-                    <input type="text" id="bankAccountHolder" value="Hemanth Kulamullathil" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>Bank Name</label>
-                    <input type="text" id="bankName" value="Mashreq Bank" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>Account Number</label>
-                    <input type="text" id="bankAccountNumber" value="019010238158" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>IBAN</label>
-                    <input type="text" id="bankIban" value="AE750330000019010238158" onchange="updatePreview()">
-                </div>
+            <div class="form-group">
+                <label>Account Number</label>
+                <input type="text" id="bankAccountNumber" placeholder="Account number" onchange="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>IBAN</label>
+                <input type="text" id="bankIban" placeholder="IBAN" onchange="updatePreview()">
             </div>
         </div>
 
-        <!-- Color Palette -->
-        <div class="collapsible-section">
-            <h3 class="collapsible-header" onclick="togglePalette()">
-                Color Palette <span id="paletteToggleIcon">▶</span>
-            </h3>
-            <div class="palette-editor" id="paletteContent" style="display: none;">
-                <div class="palette-presets">
-                    <label>Presets:</label>
-                    <div class="preset-buttons">
-                        <button class="preset-btn" onclick="applyPalette('teal')" style="background: #1a5f5a;">Teal</button>
-                        <button class="preset-btn" onclick="applyPalette('navy')" style="background: #1a3a5f;">Navy</button>
-                        <button class="preset-btn" onclick="applyPalette('maroon')" style="background: #5f1a1a;">Maroon</button>
-                        <button class="preset-btn" onclick="applyPalette('purple')" style="background: #4a1a5f;">Purple</button>
-                        <button class="preset-btn" onclick="applyPalette('forest')" style="background: #2d5f1a;">Forest</button>
+        <div class="palette-editor" id="paletteContent" style="display: none;">
+            <div class="palette-presets">
+                <label>Presets:</label>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPalette('teal')" style="background: #1a5f5a;">Teal</button>
+                    <button class="preset-btn" onclick="applyPalette('navy')" style="background: #1a3a5f;">Navy</button>
+                    <button class="preset-btn" onclick="applyPalette('maroon')" style="background: #5f1a1a;">Maroon</button>
+                    <button class="preset-btn" onclick="applyPalette('purple')" style="background: #4a1a5f;">Purple</button>
+                    <button class="preset-btn" onclick="applyPalette('forest')" style="background: #2d5f1a;">Forest</button>
+                    <button class="preset-btn" onclick="applyPalette('dark')" style="background: linear-gradient(135deg, #16213e, #1a1a2e); color: #00d4aa;">Dark</button>
+                </div>
+            </div>
+            <div class="palette-custom">
+                <div class="color-input">
+                    <label>Primary Color:</label>
+                    <input type="color" id="primaryColor" value="#1a5f5a" onchange="applyCustomColor()">
+                </div>
+                <div class="color-input">
+                    <label>Accent Color:</label>
+                    <input type="color" id="accentColor" value="#e8f5f3" onchange="applyCustomColor()">
+                </div>
+            </div>
+        </div>
+
+        <div class="background-selector" id="bgContent" style="display: none;">
+            <div class="bg-category">
+                <label>Light Backgrounds:</label>
+                <div class="bg-thumbnails">
+                    <div class="bg-thumb selected" data-bg="none" onclick="selectBackground('none')">
+                        <span>None</span>
+                    </div>
+                    {% for i in range(1, 11) %}
+                    <div class="bg-thumb" data-bg="{{ i }}" onclick="selectBackground('{{ i }}')">
+                        <img src="{{ url_for('static', filename='images/backgrounds/' ~ i ~ '.jpg') }}" alt="BG {{ i }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="bg-category">
+                <label>Dark Backgrounds:</label>
+                <div class="bg-thumbnails">
+                    <div class="bg-thumb" data-bg="d1" data-dark="true" onclick="selectBackground('d1', true)">
+                        <img src="{{ url_for('static', filename='images/backgrounds/d1.jpg') }}" alt="BG D1">
+                    </div>
+                    <div class="bg-thumb" data-bg="d2" data-dark="true" onclick="selectBackground('d2', true)">
+                        <img src="{{ url_for('static', filename='images/backgrounds/d2.jpg') }}" alt="BG D2">
                     </div>
                 </div>
-                <div class="palette-custom">
-                    <div class="color-input">
-                        <label>Primary Color:</label>
-                        <input type="color" id="primaryColor" value="#1a5f5a" onchange="applyCustomColor()">
-                    </div>
-                    <div class="color-input">
-                        <label>Accent Color:</label>
-                        <input type="color" id="accentColor" value="#e8f5f3" onchange="applyCustomColor()">
-                    </div>
+            </div>
+        </div>
+
+        <!-- Time In/Out Per Day -->
+        <div id="laborSection">
+            <h3>Time In/Out</h3>
+            <div class="line-items-section" id="lineItemsContainer">
+                <p class="hint">Select date range and click "Generate Days"</p>
+            </div>
+        </div>
+
+        <!-- Equipments Section (Optional) -->
+        <div class="equipments-section">
+            <div class="equipments-header">
+                <label class="equipments-toggle">
+                    <input type="checkbox" id="equipmentsEnabled" onchange="toggleEquipments()">
+                    <span>Equipment/Rent</span>
+                </label>
+                <label class="equipments-toggle">
+                    <input type="checkbox" id="hideLabor" onchange="toggleHideLabor()">
+                    <span>Hide Labor</span>
+                </label>
+                <label class="equipments-toggle">
+                    <input type="checkbox" id="additionalExpenseEnabled" onchange="toggleAdditionalExpense()">
+                    <span>Additional Expense</span>
+                </label>
+            </div>
+            <!-- Additional Expense Input (shown when enabled) -->
+            <div class="additional-expense-editor" id="additionalExpenseEditor" style="display: none;">
+                <div class="additional-expense-inline">
+                    <label>Additional Expense:</label>
+                    <span class="currency">AED</span>
+                    <input type="number" id="additionalExpenseAmount" value="0" min="0" onchange="updatePreview()">
                 </div>
+            </div>
+            <div class="equipments-editor" id="equipmentsEditor" style="display: none;">
+                <!-- Editable Column Headers -->
+                <div class="equipments-headers">
+                    <span class="eq-col eq-sl">SL</span>
+                    <input type="text" class="eq-col eq-desc" id="eqHeader1" value="Work/Item Description" onchange="updatePreview()">
+                    <input type="text" class="eq-col eq-qty" id="eqHeader2" value="Qty/Days" onchange="updatePreview()">
+                    <input type="text" class="eq-col eq-price" id="eqHeader3" value="Price" onchange="updatePreview()">
+                    <span class="eq-col eq-total">Total</span>
+                    <span class="eq-col eq-actions"></span>
+                </div>
+                <!-- Equipment Rows Container -->
+                <div id="equipmentRows">
+                    <!-- Rows will be added here dynamically -->
+                </div>
+                <button class="add-equipment-btn" onclick="addEquipmentRow()">+ Add Item</button>
             </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button class="save-btn" onclick="saveQuote()">Save Quote</button>
-            <button class="print-btn" onclick="window.print()">Print / PDF</button>
+            <button class="print-btn" onclick="downloadPDF()">Download PDF</button>
         </div>
     </div>
 
@@ -192,19 +359,19 @@ United Arab Emirates</textarea>
             <!-- Header -->
             <div class="invoice-header">
                 <div class="header-left">
-                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Logo" class="header-logo">
-                    <h1>HEMANTH KULAMULLATHIL</h1>
+                    <img src="{{ current_user.profilepic or url_for('static', filename='images/default-logo.jpg') }}" alt="Logo" class="header-logo" id="displayProfilePic">
+                    <h1 id="displayBusinessName">{{ current_user.business_name or current_user.full_name or 'N/A' }}</h1>
                 </div>
                 <span class="invoice-label" id="docTypeLabel">QUOTE</span>
             </div>
 
             <!-- Contact Bar -->
             <div class="contact-bar">
-                <span><span class="icon">&#128205;</span> Address: CBD 8 International CITY, DUBAI</span>
+                <span><span class="icon">&#128205;</span> Address: <span id="displayAddress">{{ current_user.address or 'Set address in Profile' }}</span></span>
                 <span>|</span>
-                <span><span class="icon">&#9993;</span> Email: nandu.hemanth@gmail.com</span>
+                <span><span class="icon">&#9993;</span> Email: <span id="displayEmail">{{ current_user.email }}</span></span>
                 <span>|</span>
-                <span><span class="icon">&#128222;</span> Mobile: +971558722420</span>
+                <span><span class="icon">&#128222;</span> Mobile: <span id="displayPhone">{{ current_user.phone or 'Set phone in Profile' }}</span></span>
             </div>
 
             <!-- Details Section -->
@@ -218,7 +385,7 @@ United Arab Emirates</textarea>
                         <span class="detail-label" id="docNumberLabel">QUOTE#:</span><br>
                         <span class="detail-value" id="displayNumber">01</span>
                     </div>
-                    <div class="detail-row">
+                    <div class="detail-row" id="poRow">
                         <span class="detail-label">PO #:</span><br>
                         <span class="detail-value" id="displayPO">PO000000</span>
                     </div>
@@ -236,36 +403,84 @@ United Arab Emirates</textarea>
             </div>
 
             <!-- POC Section -->
-            <div class="poc-section">
-                <div class="poc-item header">POC</div>
-                <div class="poc-item header">COMPANY</div>
-                <div class="poc-item header">VENUE</div>
-            </div>
-            <div class="poc-section values">
-                <div class="poc-item value" id="displayPOC">Contact Name</div>
-                <div class="poc-item value" id="displayJobCompany">Event Company</div>
-                <div class="poc-item value" id="displayVenue">Venue Name</div>
+            <div class="poc-wrapper">
+                <div class="poc-section">
+                    <div class="poc-item header">POC</div>
+                    <div class="poc-item header">PHONE</div>
+                    <div class="poc-item header">EMAIL</div>
+                    <div class="poc-item header">VENUE</div>
+                </div>
+                <div class="poc-section values">
+                    <div class="poc-item value" id="displayPOC">Contact Name</div>
+                    <div class="poc-item value" id="displayPOCPhone">+971 50 000 0000</div>
+                    <div class="poc-item value" id="displayPOCEmail">contact@company.com</div>
+                    <div class="poc-item value" id="displayVenue">Venue Name</div>
+                </div>
             </div>
 
-            <!-- Job Description -->
-            <div class="job-description-display">
-                <strong>Job:</strong> <span id="displayJobDescription">Sound Operator</span>
+
+            <!-- Items Table (Labor) -->
+            <div class="labor-wrapper">
+                <div id="laborPreview">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>DATE</th>
+                                <th>JOB</th>
+                                <th>TIME IN</th>
+                                <th>TIME OUT</th>
+                                <th>HOURS</th>
+                                <th>REGULAR</th>
+                                <th>OT</th>
+                                <th>AMOUNT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody">
+                            <!-- Items will be added here -->
+                        </tbody>
+                    </table>
+
+                    <!-- Per Diem Row (shown when Per Diem is checked) -->
+                    <div class="per-diem-row" id="perDiemRow" style="display: none;">
+                        <span class="per-diem-label">Per Diem (<span id="perDiemDays">0</span> days @ AED <span id="perDiemRateDisplay">150</span>)</span>
+                        <span class="per-diem-value" id="perDiemTotal">AED 0</span>
+                    </div>
+                    <!-- Labor Total Row (shown when equipment is also enabled) -->
+                    <div class="labor-total-row" id="laborTotalRow" style="display: none;">
+                        <span class="labor-total-label">LABOR TOTAL</span>
+                        <span class="labor-total-value" id="laborTotalDisplay">AED 0</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Items Table -->
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>DATE</th>
-                        <th>HOURS</th>
-                        <th>HOURLY RATE</th>
-                        <th>LINE TOTAL</th>
-                    </tr>
-                </thead>
-                <tbody id="itemsTableBody">
-                    <!-- Items will be added here -->
-                </tbody>
-            </table>
+            <!-- Equipments Table (shown when enabled) -->
+            <div class="equipments-wrapper" id="equipmentsPreview" style="display: none;">
+                <h4 class="equipments-title">EQUIPMENTS</h4>
+                <table class="equipments-table">
+                    <thead>
+                        <tr>
+                            <th>SL</th>
+                            <th id="eqPreviewHeader1">Work/Item Description</th>
+                            <th id="eqPreviewHeader2">Qty/Days</th>
+                            <th id="eqPreviewHeader3">Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equipmentsTableBody">
+                        <!-- Equipment rows will be added here -->
+                    </tbody>
+                </table>
+                <div class="equipments-total-row">
+                    <span class="equipments-total-label">EQUIPMENTS TOTAL</span>
+                    <span class="equipments-total-value" id="equipmentsTotalDisplay">AED 0</span>
+                </div>
+            </div>
+
+            <!-- Additional Expenses (shown when enabled) -->
+            <div class="additional-expense-wrapper" id="additionalExpenseRow" style="display: none;">
+                <span class="additional-expense-label">Additional Expenses (Miscellaneous / Other Charges):</span>
+                <span class="additional-expense-value" id="additionalExpenseDisplay">AED 0</span>
+            </div>
 
             <!-- Totals -->
             <div class="totals-section">
@@ -287,21 +502,100 @@ United Arab Emirates</textarea>
 
             <!-- Footer -->
             <div class="invoice-footer">
-                <p class="payable-note">Make All check payable to <span id="displayPayableTo">HEMANTH KULAMULLATHIL</span></p>
+                <p class="payable-note">Make All check payable to <span id="displayPayableTo">{{ current_user.bank_account_holder or 'Set in Profile' }}</span></p>
 
                 <div class="bank-details">
                     <h4>Bank Details</h4>
-                    <p>Account Holder Name: <span id="displayBankHolder">Hemanth Kulamullathil</span></p>
-                    <p>Bank Name: <span id="displayBankName">Mashreq Bank</span></p>
-                    <p>Account Number: <span id="displayAccountNumber">019010238158</span></p>
-                    <p>IBAN: <span id="displayIban">AE750330000019010238158</span></p>
+                    <p>Account Holder Name: <span id="displayBankHolder">{{ current_user.bank_account_holder or 'Set in Profile' }}</span></p>
+                    <p>Bank Name: <span id="displayBankName">{{ current_user.bank_name or 'Set in Profile' }}</span></p>
+                    <p>Account Number: <span id="displayAccountNumber">{{ current_user.bank_account_number or 'Set in Profile' }}</span></p>
+                    <p>IBAN: <span id="displayIban">{{ current_user.bank_iban or 'Set in Profile' }}</span></p>
                 </div>
+            </div>
 
-                <p class="payment-note">PAYMENT IS DUE WITHIN 30 DAYS OF THE INVOICE DATE.</p>
+            <!-- Terms of Service -->
+            <div class="tos-section">
+                <h4>TERMS & CONDITIONS</h4>
+                <ol>
+                    <li><strong>REGULAR CALL TIME:</strong> Standard working day is <span id="tosCallTime">8</span> hours.</li>
+                    <li id="tosDailyRate" style="display: none;"><strong>DAILY RATE:</strong> Each day is billed at a fixed rate of <span class="highlight">AED <span id="tosDailyRateValue">1600</span></span> per day.</li>
+                    <li id="tosOvertimeLine"><strong>OVERTIME:</strong> <span id="tosOvertimeText">Hours exceeding regular call time are charged at <span id="tosOtRate">10</span>% above the standard hourly rate.</span></li>
+                    <li id="tosAdditionalDay"><strong>ADDITIONAL DAY:</strong> Any work exceeding 16 hours in a single day will be billed as an additional full day.</li>
+                    <li><strong>PER DIEM:</strong> A per diem allowance of AED <span id="tosPerDiemRate">150</span> per day applies to cover travel and incidental expenses.</li>
+                    <li><strong>PAYMENT:</strong> Payment is due within 30 days of invoice date.</li>
+                </ol>
             </div>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <!-- Job Description Edit Modal -->
+    <div id="jobModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Edit Job Description</h3>
+            <p class="modal-date" id="modalDate"></p>
+            <input type="text" id="modalJobInput" placeholder="Enter job description">
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeJobModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveJobModal()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Before PDF Modal -->
+    <div id="savePdfModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Save Quote First</h3>
+            <p style="color: #bdc3c7; margin-bottom: 20px;">You need to save the quote before generating a PDF.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeSavePdfModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveAndDownloadPDF()">Save & Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Select Client Required Modal -->
+    <div id="selectCompanyModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>⚠️ Client Required</h3>
+            <p style="color: #bdc3c7; margin-bottom: 20px;">Please select a client before proceeding. You can select an existing client or add a new one.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn save" onclick="closeSelectCompanyModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Company Modal -->
+    <div id="addCompanyModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Add New Company</h3>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="color: #bdc3c7; display: block; margin-bottom: 5px;">Company Name *</label>
+                <input type="text" id="newCompanyName" placeholder="Enter company name" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff;">
+            </div>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="color: #bdc3c7; display: block; margin-bottom: 5px;">Address</label>
+                <textarea id="newCompanyAddress" placeholder="Enter address" rows="3" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff; resize: vertical;"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeAddCompanyModal()">Cancel</button>
+                <button class="modal-btn save" onclick="saveNewCompany()">Add Company</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overwrite Confirmation Modal -->
+    <div id="overwriteModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <h3>Quote Already Exists</h3>
+            <p>A quote with invoice number <strong id="overwriteQuoteNumber"></strong> already exists.</p>
+            <p>Do you want to overwrite it?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" onclick="closeOverwriteModal()">Cancel</button>
+                <button class="modal-btn save" onclick="confirmOverwrite()">Yes, Overwrite</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=12"></script>
 </body>
 </html>

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ quote.doc_type }} #{{ quote.invoice_number }}</title>
+    <style>
+        /* WeasyPrint-compatible CSS */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 11px;
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+            line-height: 1.4;
+            {% if background_path %}
+            background-image: url('{{ background_path }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            {% endif %}
+        }
+
+        /* Invoice Container */
+        .invoice {
+            background: {% if background_path %}transparent{% else %}#fafafa{% endif %};
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            margin-bottom: 8px;
+        }
+
+        .header-left {
+            display: table;
+        }
+
+        .header-logo {
+            display: table-cell;
+            vertical-align: middle;
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .business-name {
+            display: table-cell;
+            vertical-align: middle;
+            font-size: 1.5em;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-weight: bold;
+            letter-spacing: 1px;
+            padding-left: 15px;
+        }
+
+        .invoice-label {
+            font-size: 1.6em;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-weight: bold;
+        }
+
+        /* Contact Bar */
+        .contact-bar {
+            font-size: 0.85em;
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+            margin-bottom: 15px;
+        }
+
+        .contact-bar span {
+            margin-right: 10px;
+        }
+
+        .contact-bar .icon {
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+        }
+
+        /* Details Section */
+        .details-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .details-left {
+            flex: 1;
+        }
+
+        .details-right {
+            text-align: right;
+            max-width: 250px;
+        }
+
+        .detail-row {
+            margin-bottom: 6px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+            font-size: 0.85em;
+        }
+
+        .detail-value {
+            color: {% if is_dark_background %}#cccccc{% else %}#555{% endif %};
+            font-size: 0.85em;
+        }
+
+        .client-company {
+            font-size: 1.1em;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-weight: 600;
+        }
+
+        /* POC Section - styled like Terms & Conditions */
+        .poc-wrapper {
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.4){% else %}rgba(0, 0, 0, 0.05){% endif %};
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        .poc-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .poc-table th {
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.3){% else %}rgba(0, 0, 0, 0.15){% endif %};
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+            font-weight: bold;
+            font-size: 0.85em;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        .poc-table td {
+            background: {% if is_dark_background %}rgba(255, 255, 255, 0.1){% else %}rgba(255, 255, 255, 0.3){% endif %};
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+            font-weight: 500;
+            font-size: 0.85em;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        /* Job Description */
+        .job-description {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+
+        .items-table th {
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.4){% else %}rgba(0, 0, 0, 0.1){% endif %};
+            padding: 8px 6px;
+            text-align: left;
+            font-size: 0.8em;
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+        }
+
+        .items-table th:nth-child(n+3) {
+            text-align: right;
+        }
+
+        .items-table td {
+            padding: 8px 6px;
+            font-size: 0.85em;
+            color: {% if is_dark_background %}#ffffff{% else %}inherit{% endif %};
+        }
+
+        .items-table td:nth-child(n+3) {
+            text-align: right;
+        }
+
+        /* Per Diem Row */
+        .per-diem-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 20px;
+            padding: 8px;
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.3){% else %}#f5f5f5{% endif %};
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .per-diem-label {
+            font-size: 0.85em;
+            color: {% if is_dark_background %}#cccccc{% else %}#666{% endif %};
+        }
+
+        .per-diem-value {
+            font-weight: bold;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-size: 0.9em;
+        }
+
+        /* Labor Total Row (shown when equipment is also enabled) */
+        .labor-total-row-pdf {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 12px;
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.3){% else %}rgba(0, 0, 0, 0.1){% endif %};
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .labor-total-label-pdf {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            letter-spacing: 0.5px;
+        }
+
+        .labor-total-value-pdf {
+            font-weight: 700;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-size: 1em;
+        }
+
+        /* Totals Section */
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 25px;
+        }
+
+        .totals-box {
+            width: 220px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+        }
+
+        .total-row.final {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+        }
+
+        .total-label {
+            color: {% if is_dark_background %}#cccccc{% else %}#666{% endif %};
+        }
+
+        .total-value {
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-weight: 600;
+        }
+
+        /* Footer */
+        .invoice-footer {
+            margin-top: 25px;
+            padding-top: 15px;
+        }
+
+        .payable-note {
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-size: 0.85em;
+            margin-bottom: 12px;
+        }
+
+        .bank-details h4 {
+            font-size: 0.85em;
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+            margin-bottom: 6px;
+        }
+
+        .bank-details p {
+            font-size: 0.8em;
+            color: {% if is_dark_background %}#cccccc{% else %}#555{% endif %};
+            margin-bottom: 2px;
+        }
+
+        /* Terms Section */
+        .tos-section {
+            margin-top: 20px;
+            padding: 12px;
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.4){% else %}rgba(0, 0, 0, 0.05){% endif %};
+            border-radius: 4px;
+        }
+
+        .tos-section h4 {
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            margin-bottom: 8px;
+            font-size: 0.85em;
+            padding-bottom: 5px;
+        }
+
+        .tos-section ol {
+            padding-left: 18px;
+            margin: 0;
+        }
+
+        .tos-section li {
+            font-size: 0.75em;
+            color: {% if is_dark_background %}#cccccc{% else %}#555{% endif %};
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .tos-section li strong {
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+        }
+
+        .tos-section li .highlight {
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-weight: 600;
+        }
+
+        /* Labor Wrapper (like POC wrapper) */
+        .labor-wrapper {
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.4){% else %}rgba(0, 0, 0, 0.05){% endif %};
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        /* Equipments Wrapper (like POC wrapper) */
+        .equipments-wrapper {
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.4){% else %}rgba(0, 0, 0, 0.05){% endif %};
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        /* Equipments Section for PDF */
+        .equipments-section-pdf {
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .equipments-title-pdf {
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            margin-bottom: 8px;
+            font-size: 0.9em;
+            padding-bottom: 4px;
+        }
+
+        .equipments-table-pdf {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .equipments-table-pdf th {
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.4){% else %}rgba(0, 0, 0, 0.1){% endif %};
+            padding: 6px;
+            text-align: left;
+            font-size: 0.8em;
+            color: {% if is_dark_background %}#ffffff{% else %}#333{% endif %};
+        }
+
+        .equipments-table-pdf th:first-child {
+            width: 30px;
+            text-align: center;
+        }
+
+        .equipments-table-pdf th:nth-child(3),
+        .equipments-table-pdf th:nth-child(4),
+        .equipments-table-pdf th:nth-child(5) {
+            text-align: right;
+            width: 70px;
+        }
+
+        .equipments-table-pdf td {
+            padding: 6px;
+            font-size: 0.85em;
+            color: {% if is_dark_background %}#ffffff{% else %}inherit{% endif %};
+        }
+
+        .equipments-table-pdf td:first-child {
+            text-align: center;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+        }
+
+        .equipments-table-pdf td:nth-child(3),
+        .equipments-table-pdf td:nth-child(4),
+        .equipments-table-pdf td:nth-child(5) {
+            text-align: right;
+        }
+
+        .equipments-total-pdf {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 12px;
+            background: {% if is_dark_background %}rgba(0, 0, 0, 0.3){% else %}rgba(0, 0, 0, 0.1){% endif %};
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+
+        .equipments-total-label-pdf {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            letter-spacing: 0.5px;
+        }
+
+        .equipments-total-value-pdf {
+            font-weight: 700;
+            color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %};
+            font-size: 1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice">
+        <!-- Header -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+            <tr>
+                <td style="vertical-align: middle; width: 60px; padding: 8px 0;">
+                    {% if user.profilepic %}
+                    <img src="{{ profile_pic_path }}" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; display: block;">
+                    {% endif %}
+                </td>
+                <td style="vertical-align: middle; padding-left: 8px;">
+                    <span style="font-size: 2.1em; color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %}; font-weight: bold; letter-spacing: 1px; white-space: nowrap;">{{ user.business_name or user.full_name or 'N/A' }}</span>
+                </td>
+                <td style="vertical-align: middle; text-align: right; width: 100px;">
+                    <span style="font-size: 1.6em; color: {% if is_dark_background %}#ffffff{% else %}#1a5f5a{% endif %}; font-weight: bold;">{{ quote.doc_type }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Contact Bar -->
+        <div class="contact-bar">
+            <span><span class="icon">&#128205;</span> Address: {{ user.address or 'N/A' }}</span>
+            <span>|</span>
+            <span><span class="icon">&#9993;</span> Email: {{ user.email }}</span>
+            <span>|</span>
+            <span><span class="icon">&#128222;</span> Mobile: {{ user.phone or 'N/A' }}</span>
+        </div>
+
+        <!-- Details Section -->
+        <div class="details-section">
+            <div class="details-left">
+                <div class="detail-row">
+                    <span class="detail-label">DATE:</span><br>
+                    <span class="detail-value">{{ quote.date.strftime('%d/%m/%Y') if quote.date else '--' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">{{ quote.doc_type }}#:</span><br>
+                    <span class="detail-value">{{ quote.invoice_number or '01' }}</span>
+                </div>
+                {% if quote.doc_type == 'INVOICE' %}
+                <div class="detail-row">
+                    <span class="detail-label">PO #:</span><br>
+                    <span class="detail-value">{{ quote.po_number or 'N/A' }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-row">
+                    <span class="detail-label">JOB ID:</span><br>
+                    <span class="detail-value">{{ quote.job_id or 'N/A' }}</span>
+                </div>
+            </div>
+            <div class="details-right">
+                <div class="detail-row">
+                    <span class="detail-label">TO:</span><br>
+                    <span class="client-company">{{ quote.client_company or 'N/A' }}</span><br>
+                    <span class="detail-value">{{ (quote.client_address or '')|replace('\n', '<br>')|safe }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- POC Section -->
+        <div class="poc-wrapper">
+            <table class="poc-table">
+                <thead>
+                    <tr>
+                        <th>POC</th>
+                        <th>PHONE</th>
+                        <th>EMAIL</th>
+                        <th>VENUE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ quote.poc or 'N/A' }}</td>
+                        <td>{{ quote.poc_phone or 'N/A' }}</td>
+                        <td>{{ quote.poc_email or 'N/A' }}</td>
+                        <td>{{ quote.venue or 'N/A' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Items Table (hidden when hide_labor is true) -->
+        {% if not quote.hide_labor %}
+        <div class="labor-wrapper">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>DATE</th>
+                        <th>JOB</th>
+                        <th>TIME IN</th>
+                        <th>TIME OUT</th>
+                        <th>HOURS</th>
+                        <th>REGULAR</th>
+                        <th>OT</th>
+                        <th>AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in quote.line_items %}
+                    <tr>
+                        <td>{{ item.date.strftime('%d/%m/%Y') if item.date else '--' }}</td>
+                        <td>{{ item.job_description or quote.job_description or 'Sound Operator' }}</td>
+                        <td>{{ item.time_in or '--' }}</td>
+                        <td>{{ item.time_out or '--' }}</td>
+                        <td>{{ '%.1f'|format(item.total_hours or 0) }}</td>
+                        <td>{{ '%.1f'|format(item.regular_hours or 0) }}</td>
+                        <td>{{ '%.1f'|format(item.overtime_hours or 0) }}</td>
+                        <td>
+                            {% if quote.billing_type == 'daily' %}
+                                {% if item.overtime_hours > 0 %}
+                                    AED {{ '%.0f'|format(item.daily_rate or quote.daily_rate or 1600) }} + {{ '%.0f'|format(item.overtime_hours * (item.ot_hourly_rate or quote.ot_hourly_rate or 220)) }} OT = {{ '%.2f'|format(item.line_total or 0) }}
+                                {% else %}
+                                    AED {{ '%.2f'|format(item.line_total or 0) }}
+                                {% endif %}
+                            {% else %}
+                                AED {{ '%.2f'|format(item.line_total or 0) }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Per Diem Row (if applicable) -->
+            {% if quote.outside_dubai and quote.line_items|length > 0 %}
+            <div class="per-diem-row">
+                <span class="per-diem-label">Per Diem ({{ quote.line_items|length }} days @ AED {{ '%.0f'|format(quote.per_diem_rate or 150) }})</span>
+                <span class="per-diem-value">AED {{ '%.2f'|format((quote.line_items|length) * (quote.per_diem_rate or 150)) }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Labor Total Row (shown when equipment is also enabled) -->
+            {% if quote.equipments_enabled and equipment_items %}
+            {% set labor_line_total = quote.line_items|sum(attribute='line_total') %}
+            {% set per_diem_total = (quote.line_items|length) * (quote.per_diem_rate or 150) if quote.outside_dubai else 0 %}
+            {% set labor_total = labor_line_total + per_diem_total %}
+            <div class="labor-total-row-pdf">
+                <span class="labor-total-label-pdf">LABOR TOTAL</span>
+                <span class="labor-total-value-pdf">AED {{ '{:,.2f}'.format(labor_total) }}</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Equipments Section (if enabled) -->
+        {% if quote.equipments_enabled and equipment_items %}
+        <div class="equipments-wrapper">
+            <h4 class="equipments-title-pdf">EQUIPMENTS</h4>
+            <table class="equipments-table-pdf">
+                <thead>
+                    <tr>
+                        <th>SL</th>
+                        <th>{{ equipment_headers.header1 or 'Work/Item Description' }}</th>
+                        <th>{{ equipment_headers.header2 or 'Qty/Days' }}</th>
+                        <th>{{ equipment_headers.header3 or 'Price' }}</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in equipment_items %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.description or '' }}</td>
+                        <td>{{ item.qty or '' }}</td>
+                        <td>{{ '{:,.0f}'.format((item.price or 0)|float) }}</td>
+                        <td>{{ '{:,.0f}'.format((item.total or 0)|float) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="equipments-total-pdf">
+                <span class="equipments-total-label-pdf">EQUIPMENTS TOTAL</span>
+                <span class="equipments-total-value-pdf">AED {{ '{:,.0f}'.format(equipment_total|float) }}</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Totals -->
+        <div class="totals-section">
+            <div class="totals-box">
+                <div class="total-row">
+                    <span class="total-label">SUBTOTAL</span>
+                    <span class="total-value">AED {{ '%.2f'|format(quote.subtotal or 0) }}</span>
+                </div>
+                <div class="total-row">
+                    <span class="total-label">TAX</span>
+                    <span class="total-value">{{ '%.0f'|format(quote.tax_rate or 0) }}%</span>
+                </div>
+                <div class="total-row final">
+                    <span class="total-label">TOTAL</span>
+                    <span class="total-value">AED {{ '%.2f'|format(quote.total or 0) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="invoice-footer">
+            <p class="payable-note">Make All check payable to {{ quote.bank_account_holder or user.bank_account_holder or 'N/A' }}</p>
+
+            <div class="bank-details">
+                <h4>Bank Details</h4>
+                <p>Account Holder Name: {{ quote.bank_account_holder or user.bank_account_holder or 'N/A' }}</p>
+                <p>Bank Name: {{ quote.bank_name or user.bank_name or 'N/A' }}</p>
+                <p>Account Number: {{ quote.bank_account_number or user.bank_account_number or 'N/A' }}</p>
+                <p>IBAN: {{ quote.bank_iban or user.bank_iban or 'N/A' }}</p>
+            </div>
+        </div>
+
+        <!-- Terms of Service -->
+        <div class="tos-section">
+            <h4>TERMS & CONDITIONS</h4>
+            <ol>
+                <li><strong>REGULAR CALL TIME:</strong> Standard working day is <span class="highlight">{{ quote.regular_call_hours or 8 }}</span> hours.</li>
+                {% if quote.billing_type == 'daily' %}
+                <li><strong>DAILY RATE:</strong> Each day is billed at a fixed rate of <span class="highlight">AED {{ '%.0f'|format(quote.daily_rate or 1600) }}</span> per day.</li>
+                <li><strong>OVERTIME:</strong> Hours exceeding regular call time are charged at <span class="highlight">AED {{ '%.0f'|format(quote.ot_hourly_rate or 220) }}</span> per hour.</li>
+                {% else %}
+                <li><strong>OVERTIME:</strong> Hours exceeding regular call time are charged at <span class="highlight">{{ quote.overtime_percentage or 10 }}</span>% above the standard hourly rate.</li>
+                <li><strong>ADDITIONAL DAY:</strong> Any work exceeding 16 hours in a single day will be billed as an additional full day.</li>
+                {% endif %}
+                <li><strong>PER DIEM:</strong> A per diem allowance of AED {{ '%.0f'|format(quote.per_diem_rate or 150) }} per day applies to cover travel and incidental expenses.</li>
+                <li><strong>PAYMENT:</strong> Payment is due within 30 days of invoice date.</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
