@@ -619,6 +619,22 @@
                     <span class="total-label">TAX</span>
                     <span class="total-value">{{ '%.0f'|format(quote.tax_rate or 0) }}%</span>
                 </div>
+                {% if quote.discount_mode and quote.discount_mode != 'off' and quote.discount_value and quote.discount_value > 0 %}
+                {% set subtotal_with_tax = (quote.subtotal or 0) + ((quote.subtotal or 0) * (quote.tax_rate or 0) / 100) %}
+                {% if quote.discount_mode == 'percent' %}
+                {% set discount_amount = subtotal_with_tax * (quote.discount_value / 100) %}
+                <div class="total-row discount-row">
+                    <span class="total-label">DISCOUNT ({{ '%.0f'|format(quote.discount_value) }}%)</span>
+                    <span class="total-value" style="color: #e74c3c;">- AED {{ '%.2f'|format(discount_amount) }}</span>
+                </div>
+                {% else %}
+                {% set discount_amount = [quote.discount_value, subtotal_with_tax]|min %}
+                <div class="total-row discount-row">
+                    <span class="total-label">DISCOUNT</span>
+                    <span class="total-value" style="color: #e74c3c;">- AED {{ '%.2f'|format(discount_amount) }}</span>
+                </div>
+                {% endif %}
+                {% endif %}
                 <div class="total-row final">
                     <span class="total-label">TOTAL</span>
                     <span class="total-value">AED {{ '%.2f'|format(quote.total or 0) }}</span>

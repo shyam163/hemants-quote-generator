@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Quote Generator</title>
     <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/favicon.jpg') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=21">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=27">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -96,7 +96,9 @@
             <div class="setting-group" id="otPercentageGroup">
                 <label>OT Rate:</label>
                 <select id="overtimePercentage" onchange="updatePreview()">
-                    <option value="10" selected>+10%</option>
+                    <option value="0" selected>NA</option>
+                    <option value="5">+5%</option>
+                    <option value="10">+10%</option>
                     <option value="15">+15%</option>
                     <option value="20">+20%</option>
                 </select>
@@ -128,11 +130,11 @@
                 </div>
                 <div class="form-group">
                     <label>PO #</label>
-                    <input type="text" id="poNumber" value="PO000000" onchange="updatePreview()">
+                    <input type="text" id="poNumber" value="" placeholder="PO000000" onchange="updatePreview()">
                 </div>
                 <div class="form-group">
                     <label>Job ID</label>
-                    <input type="text" id="jobId" value="EVS 00-00000" onchange="updatePreview()">
+                    <input type="text" id="jobId" value="" placeholder="EVS 00-00000" onchange="updatePreview()">
                 </div>
 
                 <h3>Work Period</h3>
@@ -159,50 +161,67 @@
                         <button type="button" class="add-company-btn" onclick="showAddCompanyModal()" title="Add new company">+</button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Address</label>
-                    <textarea id="clientAddress" rows="3" onchange="updatePreview()">PO Box 00000
-Location - City
-United Arab Emirates</textarea>
+
+                <!-- Collapsible Client Info -->
+                <div class="client-info-collapsible">
+                    <div class="client-info-header" onclick="toggleClientInfo()">
+                        Edit Client Info <span id="clientInfoToggleIcon">▶</span>
+                    </div>
+                    <div class="client-info-content" id="clientInfoContent" style="display: none;">
+                        <div class="form-group">
+                            <label>Address</label>
+                            <textarea id="clientAddress" rows="3" onchange="updatePreview()"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>POC (Point of Contact)</label>
+                            <input type="text" id="poc" value="" onchange="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>POC Phone</label>
+                            <input type="tel" id="pocPhone" value="" onchange="updatePreview()">
+                        </div>
+                        <div class="form-group">
+                            <label>POC Email</label>
+                            <input type="email" id="pocEmail" value="" onchange="updatePreview()">
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>POC (Point of Contact)</label>
-                    <input type="text" id="poc" value="Contact Name" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>POC Phone</label>
-                    <input type="tel" id="pocPhone" value="+971 50 000 0000" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>POC Email</label>
-                    <input type="email" id="pocEmail" value="contact@company.com" onchange="updatePreview()">
-                </div>
+
                 <div class="form-group">
                     <label>Venue</label>
-                    <input type="text" id="venue" value="Venue Name" onchange="updatePreview()">
+                    <input type="text" id="venue" value="" onchange="updatePreview()">
                 </div>
 
                 <h3>Job Description</h3>
                 <div class="form-group">
                     <label>Description</label>
-                    <input type="text" id="jobDescription" value="Sound Operator" onchange="updatePreview()">
+                    <input type="text" id="jobDescription" value="" placeholder="Sound Operator" onchange="updatePreview()">
+                </div>
+
+                <!-- Tax, Discount, and Total -->
+                <div class="tax-totals-section" style="margin-top: 15px;">
+                    <div class="tax-inline">
+                        <label>Tax(%)</label>
+                        <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
+                    </div>
+                    <div class="discount-inline">
+                        <label>Discount</label>
+                        <select id="discountMode" onchange="toggleDiscountInput(); updatePreview();">
+                            <option value="off">Off</option>
+                            <option value="percent">%</option>
+                            <option value="fixed">Fixed</option>
+                        </select>
+                        <input type="number" id="discountValue" value="0" min="0" step="0.01" placeholder="0" onchange="updatePreview();" style="display: none;">
+                    </div>
+                    <div class="totals-display">
+                        <div>Total: <span id="editorTotal">AED 0</span></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Settings Row: Tax, Bank Details, Color Palette -->
+        <!-- Settings Row: Bank Details, Color Palette -->
         <div class="settings-row">
-            <!-- Tax and Totals -->
-            <div class="tax-totals-section">
-                <div class="tax-inline">
-                    <label>Tax(%)</label>
-                    <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
-                </div>
-                <div class="totals-display">
-                    <div>Total: <span id="editorTotal">AED 0</span></div>
-                </div>
-            </div>
-
             <!-- Bank Details (Collapsible) -->
             <div class="collapsible-section">
                 <h3 class="collapsible-header" onclick="toggleBankDetails()">
@@ -246,15 +265,30 @@ United Arab Emirates</textarea>
         </div>
 
         <div class="palette-editor" id="paletteContent" style="display: none;">
-            <div class="palette-presets">
-                <label>Presets:</label>
+            <div class="palette-category">
+                <label>Light Palettes:</label>
                 <div class="preset-buttons">
-                    <button class="preset-btn" onclick="applyPalette('teal')" style="background: #1a5f5a;">Teal</button>
-                    <button class="preset-btn" onclick="applyPalette('navy')" style="background: #1a3a5f;">Navy</button>
-                    <button class="preset-btn" onclick="applyPalette('maroon')" style="background: #5f1a1a;">Maroon</button>
-                    <button class="preset-btn" onclick="applyPalette('purple')" style="background: #4a1a5f;">Purple</button>
-                    <button class="preset-btn" onclick="applyPalette('forest')" style="background: #2d5f1a;">Forest</button>
-                    <button class="preset-btn" onclick="applyPalette('dark')" style="background: linear-gradient(135deg, #16213e, #1a1a2e); color: #00d4aa;">Dark</button>
+                    <button class="preset-btn selected" onclick="applyPalette('teal')" style="background: #1a5f5a;" data-palette="teal">Teal</button>
+                    <button class="preset-btn" onclick="applyPalette('navy')" style="background: #1a3a5f;" data-palette="navy">Navy</button>
+                    <button class="preset-btn" onclick="applyPalette('maroon')" style="background: #5f1a1a;" data-palette="maroon">Maroon</button>
+                    <button class="preset-btn" onclick="applyPalette('purple')" style="background: #4a1a5f;" data-palette="purple">Purple</button>
+                    <button class="preset-btn" onclick="applyPalette('forest')" style="background: #2d5f1a;" data-palette="forest">Forest</button>
+                    <button class="preset-btn" onclick="applyPalette('ocean')" style="background: #0077b6;" data-palette="ocean">Ocean</button>
+                    <button class="preset-btn" onclick="applyPalette('coral')" style="background: #e07a5f;" data-palette="coral">Coral</button>
+                    <button class="preset-btn" onclick="applyPalette('slate')" style="background: #4a5568;" data-palette="slate">Slate</button>
+                    <button class="preset-btn" onclick="applyPalette('gold')" style="background: #b8860b;" data-palette="gold">Gold</button>
+                    <button class="preset-btn" onclick="applyPalette('rose')" style="background: #be185d;" data-palette="rose">Rose</button>
+                </div>
+            </div>
+            <div class="palette-category">
+                <label>Dark Palettes:</label>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="applyPalette('dark')" style="background: linear-gradient(135deg, #16213e, #1a1a2e); color: #00d4aa;" data-palette="dark">Midnight</button>
+                    <button class="preset-btn" onclick="applyPalette('darkTeal')" style="background: #0d3b36; color: #2dd4bf;" data-palette="darkTeal">Dark Teal</button>
+                    <button class="preset-btn" onclick="applyPalette('darkPurple')" style="background: #2e1065; color: #a78bfa;" data-palette="darkPurple">Dark Purple</button>
+                    <button class="preset-btn" onclick="applyPalette('darkRed')" style="background: #450a0a; color: #fca5a5;" data-palette="darkRed">Dark Red</button>
+                    <button class="preset-btn" onclick="applyPalette('charcoal')" style="background: #1f2937; color: #9ca3af;" data-palette="charcoal">Charcoal</button>
+                    <button class="preset-btn" onclick="applyPalette('nightBlue')" style="background: #0c1929; color: #60a5fa;" data-palette="nightBlue">Night Blue</button>
                 </div>
             </div>
             <div class="palette-custom">
@@ -312,6 +346,10 @@ United Arab Emirates</textarea>
                     <span>Equipment/Rent</span>
                 </label>
                 <label class="equipments-toggle">
+                    <input type="checkbox" id="travelExpensesEnabled" onchange="toggleTravelExpenses()">
+                    <span>Travel Expenses</span>
+                </label>
+                <label class="equipments-toggle">
                     <input type="checkbox" id="hideLabor" onchange="toggleHideLabor()">
                     <span>Hide Labor</span>
                 </label>
@@ -326,6 +364,7 @@ United Arab Emirates</textarea>
                     <label>Additional Expense:</label>
                     <span class="currency">AED</span>
                     <input type="number" id="additionalExpenseAmount" value="0" min="0" onchange="updatePreview()">
+                    <input type="text" id="additionalExpenseDesc" placeholder="Description (e.g., Miscellaneous)" onchange="updatePreview()">
                 </div>
             </div>
             <div class="equipments-editor" id="equipmentsEditor" style="display: none;">
@@ -343,6 +382,72 @@ United Arab Emirates</textarea>
                     <!-- Rows will be added here dynamically -->
                 </div>
                 <button class="add-equipment-btn" onclick="addEquipmentRow()">+ Add Item</button>
+            </div>
+            <!-- Travel Expenses Editor -->
+            <div class="travel-expenses-editor" id="travelExpensesEditor" style="display: none;">
+                <div class="travel-headers">
+                    <span class="travel-col travel-sl">SL</span>
+                    <span class="travel-col travel-from">From</span>
+                    <span class="travel-col travel-to">To</span>
+                    <span class="travel-col travel-amount">Amount</span>
+                    <span class="travel-col travel-actions"></span>
+                </div>
+                <div id="travelRows">
+                    <!-- Rows will be added here dynamically -->
+                </div>
+                <div class="travel-total-row">
+                    <span class="travel-total-label">Total:</span>
+                    <span class="travel-total-value" id="travelTotalEditor">AED 0</span>
+                </div>
+                <button class="add-equipment-btn" onclick="addTravelRow()">+ Add Route</button>
+            </div>
+        </div>
+
+        <!-- TOS Editor Section (Collapsible) -->
+        <div class="tos-editor-section">
+            <div class="tos-editor-header" onclick="toggleTosEditor()">
+                Terms & Conditions <span id="tosEditorToggleIcon">▶</span>
+            </div>
+            <div class="tos-editor-content" id="tosEditorContent" style="display: none;">
+                <div class="tos-item">
+                    <label class="tos-item-toggle">
+                        <input type="checkbox" id="tosCallTimeEnabled" checked onchange="updatePreview()">
+                        <strong>Regular Call Time</strong>
+                    </label>
+                    <textarea id="tosCallTimeText" rows="2" onchange="updatePreview()">Standard working day is {callTime} hours.</textarea>
+                </div>
+                <div class="tos-item">
+                    <label class="tos-item-toggle">
+                        <input type="checkbox" id="tosOvertimeEnabled" checked onchange="updatePreview()">
+                        <strong>Overtime</strong>
+                    </label>
+                    <textarea id="tosOvertimeTextEdit" rows="2" onchange="updatePreview()">{overtimeText}</textarea>
+                </div>
+                <div class="tos-item">
+                    <label class="tos-item-toggle">
+                        <input type="checkbox" id="tosAdditionalDayEnabled" checked onchange="updatePreview()">
+                        <strong>Additional Day</strong>
+                    </label>
+                    <textarea id="tosAdditionalDayText" rows="2" onchange="updatePreview()">Any work exceeding 16 hours in a single day will be billed as an additional full day.</textarea>
+                </div>
+                <div class="tos-item">
+                    <label class="tos-item-toggle">
+                        <input type="checkbox" id="tosPerDiemEnabled" checked onchange="updatePreview()">
+                        <strong>Per Diem</strong>
+                    </label>
+                    <textarea id="tosPerDiemText" rows="2" onchange="updatePreview()">A per diem allowance of AED {perDiemRate} per day applies to cover travel and incidental expenses.</textarea>
+                </div>
+                <div class="tos-item">
+                    <label class="tos-item-toggle">
+                        <input type="checkbox" id="tosPaymentEnabled" checked onchange="updatePreview()">
+                        <strong>Payment</strong>
+                    </label>
+                    <textarea id="tosPaymentText" rows="2" onchange="updatePreview()">Payment is due within 30 days of invoice date.</textarea>
+                </div>
+                <div id="customTosItems">
+                    <!-- Custom TOS items will be added here -->
+                </div>
+                <button class="add-equipment-btn" onclick="addCustomTos()">+ Add Custom Term</button>
             </div>
         </div>
 
@@ -387,17 +492,17 @@ United Arab Emirates</textarea>
                     </div>
                     <div class="detail-row" id="poRow">
                         <span class="detail-label">PO #:</span><br>
-                        <span class="detail-value" id="displayPO">PO000000</span>
+                        <span class="detail-value" id="displayPO">--</span>
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">JOB ID:</span><br>
-                        <span class="detail-value" id="displayJobId">EVS 00-00000</span>
+                        <span class="detail-value" id="displayJobId">--</span>
                     </div>
                 </div>
                 <div class="details-right">
                     <div class="detail-row">
                         <span class="detail-label">TO:</span><br>
-                        <span class="detail-value" id="displayClient">Company Name<br>PO Box 00000<br>Location - City<br>United Arab Emirates</span>
+                        <span class="detail-value" id="displayClient">--</span>
                     </div>
                 </div>
             </div>
@@ -411,10 +516,10 @@ United Arab Emirates</textarea>
                     <div class="poc-item header">VENUE</div>
                 </div>
                 <div class="poc-section values">
-                    <div class="poc-item value" id="displayPOC">Contact Name</div>
-                    <div class="poc-item value" id="displayPOCPhone">+971 50 000 0000</div>
-                    <div class="poc-item value" id="displayPOCEmail">contact@company.com</div>
-                    <div class="poc-item value" id="displayVenue">Venue Name</div>
+                    <div class="poc-item value" id="displayPOC">--</div>
+                    <div class="poc-item value" id="displayPOCPhone">--</div>
+                    <div class="poc-item value" id="displayPOCEmail">--</div>
+                    <div class="poc-item value" id="displayVenue">--</div>
                 </div>
             </div>
 
@@ -476,9 +581,31 @@ United Arab Emirates</textarea>
                 </div>
             </div>
 
+            <!-- Travel Expenses Table (shown when enabled) -->
+            <div class="travel-wrapper" id="travelPreview" style="display: none;">
+                <h4 class="travel-title">TRAVEL EXPENSES</h4>
+                <table class="travel-table">
+                    <thead>
+                        <tr>
+                            <th>SL</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="travelTableBody">
+                        <!-- Travel rows will be added here -->
+                    </tbody>
+                </table>
+                <div class="travel-total-row-preview">
+                    <span class="travel-total-label">TRAVEL TOTAL</span>
+                    <span class="travel-total-value" id="travelTotalDisplay">AED 0</span>
+                </div>
+            </div>
+
             <!-- Additional Expenses (shown when enabled) -->
             <div class="additional-expense-wrapper" id="additionalExpenseRow" style="display: none;">
-                <span class="additional-expense-label">Additional Expenses (Miscellaneous / Other Charges):</span>
+                <span class="additional-expense-label">Additional Expense<span id="additionalExpenseLabelText"></span>:</span>
                 <span class="additional-expense-value" id="additionalExpenseDisplay">AED 0</span>
             </div>
 
@@ -492,6 +619,10 @@ United Arab Emirates</textarea>
                     <div class="total-row">
                         <span class="total-label">TAX</span>
                         <span class="total-value" id="displayTax">0%</span>
+                    </div>
+                    <div class="total-row discount-row" id="discountRow" style="display: none;">
+                        <span class="total-label" id="discountLabel">DISCOUNT</span>
+                        <span class="total-value discount-value" id="displayDiscount">- AED 0</span>
                     </div>
                     <div class="total-row final">
                         <span class="total-label">TOTAL</span>
@@ -516,13 +647,8 @@ United Arab Emirates</textarea>
             <!-- Terms of Service -->
             <div class="tos-section">
                 <h4>TERMS & CONDITIONS</h4>
-                <ol>
-                    <li><strong>REGULAR CALL TIME:</strong> Standard working day is <span id="tosCallTime">8</span> hours.</li>
-                    <li id="tosDailyRate" style="display: none;"><strong>DAILY RATE:</strong> Each day is billed at a fixed rate of <span class="highlight">AED <span id="tosDailyRateValue">1600</span></span> per day.</li>
-                    <li id="tosOvertimeLine"><strong>OVERTIME:</strong> <span id="tosOvertimeText">Hours exceeding regular call time are charged at <span id="tosOtRate">10</span>% above the standard hourly rate.</span></li>
-                    <li id="tosAdditionalDay"><strong>ADDITIONAL DAY:</strong> Any work exceeding 16 hours in a single day will be billed as an additional full day.</li>
-                    <li><strong>PER DIEM:</strong> A per diem allowance of AED <span id="tosPerDiemRate">150</span> per day applies to cover travel and incidental expenses.</li>
-                    <li><strong>PAYMENT:</strong> Payment is due within 30 days of invoice date.</li>
+                <ol id="tosPreviewList">
+                    <!-- TOS items will be generated dynamically -->
                 </ol>
             </div>
         </div>
@@ -566,15 +692,32 @@ United Arab Emirates</textarea>
 
     <!-- Add Company Modal -->
     <div id="addCompanyModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 500px;">
             <h3>Add New Company</h3>
-            <div class="form-group" style="margin-bottom: 15px;">
+            <div class="form-group" style="margin-bottom: 12px;">
                 <label style="color: #bdc3c7; display: block; margin-bottom: 5px;">Company Name *</label>
                 <input type="text" id="newCompanyName" placeholder="Enter company name" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff;">
             </div>
-            <div class="form-group" style="margin-bottom: 20px;">
+            <div class="form-group" style="margin-bottom: 12px;">
                 <label style="color: #bdc3c7; display: block; margin-bottom: 5px;">Address</label>
-                <textarea id="newCompanyAddress" placeholder="Enter address" rows="3" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff; resize: vertical;"></textarea>
+                <textarea id="newCompanyAddress" placeholder="Enter address (street, city, zip, country)" rows="2" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff; resize: vertical;"></textarea>
+            </div>
+            <div style="border-top: 1px solid #3d566e; margin: 15px 0; padding-top: 12px;">
+                <label style="color: #1abc9c; font-weight: 600; font-size: 0.9em; display: block; margin-bottom: 10px;">Point of Contact (POC)</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group">
+                        <label style="color: #bdc3c7; display: block; margin-bottom: 5px; font-size: 0.85em;">Name</label>
+                        <input type="text" id="newCompanyPoc" placeholder="Contact person" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff;">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #bdc3c7; display: block; margin-bottom: 5px; font-size: 0.85em;">Phone</label>
+                        <input type="text" id="newCompanyPocPhone" placeholder="+971 XX XXX XXXX" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff;">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <label style="color: #bdc3c7; display: block; margin-bottom: 5px; font-size: 0.85em;">Email</label>
+                    <input type="email" id="newCompanyPocEmail" placeholder="contact@company.com" style="width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #444; background: #1a1a2e; color: #fff;">
+                </div>
             </div>
             <div class="modal-buttons">
                 <button class="modal-btn cancel" onclick="closeAddCompanyModal()">Cancel</button>
@@ -596,6 +739,6 @@ United Arab Emirates</textarea>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=14"></script>
 </body>
 </html>

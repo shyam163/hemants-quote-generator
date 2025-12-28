@@ -186,6 +186,22 @@ class Quote(db.Model):
     equipment_headers = db.Column(db.Text)  # JSON string
     equipment_items = db.Column(db.Text)  # JSON string
 
+    # Travel expenses (stored as JSON)
+    travel_expenses_enabled = db.Column(db.Boolean, default=False)
+    travel_items = db.Column(db.Text)  # JSON string
+
+    # Additional expense
+    additional_expense_enabled = db.Column(db.Boolean, default=False)
+    additional_expense_amount = db.Column(db.Float, default=0)
+    additional_expense_desc = db.Column(db.String(200))
+
+    # TOS settings (stored as JSON)
+    tos_settings = db.Column(db.Text)  # JSON string
+
+    # Discount settings
+    discount_mode = db.Column(db.String(10), default='off')  # off, percent, fixed
+    discount_value = db.Column(db.Float, default=0)
+
     # Editable bank details (per quote)
     bank_account_holder = db.Column(db.String(200))
     bank_name = db.Column(db.String(200))
@@ -238,6 +254,14 @@ class Quote(db.Model):
             'hide_labor': self.hide_labor,
             'equipment_headers': json.loads(self.equipment_headers) if self.equipment_headers else None,
             'equipment_items': json.loads(self.equipment_items) if self.equipment_items else [],
+            'travel_expenses_enabled': self.travel_expenses_enabled,
+            'travel_items': json.loads(self.travel_items) if self.travel_items else [],
+            'additional_expense_enabled': self.additional_expense_enabled,
+            'additional_expense_amount': self.additional_expense_amount,
+            'additional_expense_desc': self.additional_expense_desc,
+            'tos_settings': json.loads(self.tos_settings) if self.tos_settings else None,
+            'discount_mode': self.discount_mode or 'off',
+            'discount_value': self.discount_value or 0,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'line_items': [item.to_dict() for item in self.line_items]
         }
@@ -686,6 +710,9 @@ def add_company():
     data = request.json
     name = data.get('name', '').strip()
     address = data.get('address', '').strip()
+    poc = data.get('poc', '').strip()
+    poc_phone = data.get('poc_phone', '').strip()
+    poc_email = data.get('poc_email', '').strip()
 
     if not name:
         return jsonify({'error': 'Company name is required'}), 400
@@ -698,7 +725,10 @@ def add_company():
     company = ClientCompany(
         user_id=current_user.id,
         name=name,
-        address=address
+        address=address,
+        poc=poc,
+        poc_phone=poc_phone,
+        poc_email=poc_email
     )
     db.session.add(company)
     db.session.commit()
@@ -706,7 +736,10 @@ def add_company():
     return jsonify({
         'id': company.id,
         'name': company.name,
-        'address': company.address
+        'address': company.address or '',
+        'poc': company.poc or '',
+        'poc_phone': company.poc_phone or '',
+        'poc_email': company.poc_email or ''
     })
 
 @app.route('/api/companies/<company_name>/next-sequence')
@@ -777,7 +810,15 @@ def create_quote():
         equipments_enabled=data.get('equipments_enabled', False),
         hide_labor=data.get('hide_labor', False),
         equipment_headers=json.dumps(data.get('equipment_headers')) if data.get('equipment_headers') else None,
-        equipment_items=json.dumps(data.get('equipment_items')) if data.get('equipment_items') else None
+        equipment_items=json.dumps(data.get('equipment_items')) if data.get('equipment_items') else None,
+        travel_expenses_enabled=data.get('travel_expenses_enabled', False),
+        travel_items=json.dumps(data.get('travel_items')) if data.get('travel_items') else None,
+        additional_expense_enabled=data.get('additional_expense_enabled', False),
+        additional_expense_amount=data.get('additional_expense_amount', 0),
+        additional_expense_desc=data.get('additional_expense_desc'),
+        tos_settings=json.dumps(data.get('tos_settings')) if data.get('tos_settings') else None,
+        discount_mode=data.get('discount_mode', 'off'),
+        discount_value=data.get('discount_value', 0)
     )
 
     for item_data in data.get('line_items', []):
@@ -887,6 +928,26 @@ def update_quote(quote_id):
         quote.equipment_headers = json.dumps(data['equipment_headers']) if data['equipment_headers'] else None
     if 'equipment_items' in data:
         quote.equipment_items = json.dumps(data['equipment_items']) if data['equipment_items'] else None
+
+    # Update travel expenses
+    quote.travel_expenses_enabled = data.get('travel_expenses_enabled', quote.travel_expenses_enabled)
+    if 'travel_items' in data:
+        quote.travel_items = json.dumps(data['travel_items']) if data['travel_items'] else None
+
+    # Update additional expense
+    quote.additional_expense_enabled = data.get('additional_expense_enabled', quote.additional_expense_enabled)
+    quote.additional_expense_amount = data.get('additional_expense_amount', quote.additional_expense_amount)
+    quote.additional_expense_desc = data.get('additional_expense_desc', quote.additional_expense_desc)
+
+    # Update TOS settings
+    if 'tos_settings' in data:
+        quote.tos_settings = json.dumps(data['tos_settings']) if data['tos_settings'] else None
+
+    # Update discount settings
+    if 'discount_mode' in data:
+        quote.discount_mode = data['discount_mode']
+    if 'discount_value' in data:
+        quote.discount_value = data['discount_value']
 
     # Update line items
     if 'line_items' in data:

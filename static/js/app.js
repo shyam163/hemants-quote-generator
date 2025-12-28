@@ -5,6 +5,8 @@ let currentQuoteId = null;
 let userProfile = null;  // Loaded from /api/profile
 let savedCompanies = [];  // User's saved companies
 let equipmentItems = [];  // Equipment/materials items
+let travelItems = [];     // Travel expense items
+let customTosItems = [];  // Custom TOS items
 
 // Invoice Number Generation
 // Format: ###-XXXX-MMM-DD (e.g., 001-MICR-DEC-26)
@@ -139,6 +141,12 @@ function showAddCompanyModal() {
 
 function closeAddCompanyModal() {
     document.getElementById('addCompanyModal').style.display = 'none';
+    // Clear all fields
+    document.getElementById('newCompanyName').value = '';
+    document.getElementById('newCompanyAddress').value = '';
+    document.getElementById('newCompanyPoc').value = '';
+    document.getElementById('newCompanyPocPhone').value = '';
+    document.getElementById('newCompanyPocEmail').value = '';
 }
 
 // Overwrite confirmation modal
@@ -186,6 +194,9 @@ function findExistingQuoteByNumber(invoiceNumber) {
 async function saveNewCompany() {
     const name = document.getElementById('newCompanyName').value.trim();
     const address = document.getElementById('newCompanyAddress').value.trim();
+    const poc = document.getElementById('newCompanyPoc').value.trim();
+    const pocPhone = document.getElementById('newCompanyPocPhone').value.trim();
+    const pocEmail = document.getElementById('newCompanyPocEmail').value.trim();
 
     if (!name) {
         alert('Please enter a company name');
@@ -196,7 +207,7 @@ async function saveNewCompany() {
         const response = await fetch('/api/companies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, address })
+            body: JSON.stringify({ name, address, poc, poc_phone: pocPhone, poc_email: pocEmail })
         });
 
         if (response.ok) {
@@ -204,9 +215,18 @@ async function saveNewCompany() {
             savedCompanies.push(company);
             populateCompanyDropdown(company.name);
 
-            // Auto-fill address
+            // Auto-fill client details from company
             if (address) {
                 document.getElementById('clientAddress').value = address;
+            }
+            if (poc) {
+                document.getElementById('pocName').value = poc;
+            }
+            if (pocPhone) {
+                document.getElementById('pocPhone').value = pocPhone;
+            }
+            if (pocEmail) {
+                document.getElementById('pocEmail').value = pocEmail;
             }
 
             closeAddCompanyModal();
@@ -227,6 +247,28 @@ function toggleBankDetails() {
     const icon = document.getElementById('bankToggleIcon');
     if (content.style.display === 'none') {
         content.style.display = 'grid';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+// Toggle discount input visibility
+function toggleDiscountInput() {
+    const mode = document.getElementById('discountMode').value;
+    const input = document.getElementById('discountValue');
+    input.style.display = mode === 'off' ? 'none' : 'inline-block';
+    if (mode === 'off') {
+        input.value = '0';
+    }
+}
+
+function toggleClientInfo() {
+    const content = document.getElementById('clientInfoContent');
+    const icon = document.getElementById('clientInfoToggleIcon');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
         icon.textContent = '▼';
     } else {
         content.style.display = 'none';
@@ -267,6 +309,208 @@ let isDarkBackground = false;
 // Track current palette
 let currentPaletteName = 'teal';
 
+// Toggle TOS Editor
+function toggleTosEditor() {
+    const content = document.getElementById('tosEditorContent');
+    const icon = document.getElementById('tosEditorToggleIcon');
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+// Toggle Travel Expenses
+function toggleTravelExpenses() {
+    const editor = document.getElementById('travelExpensesEditor');
+    const checkbox = document.getElementById('travelExpensesEnabled');
+    const preview = document.getElementById('travelPreview');
+
+    if (checkbox.checked) {
+        editor.style.display = 'block';
+        preview.style.display = 'block';
+        if (travelItems.length === 0) {
+            addTravelRow();
+        }
+    } else {
+        editor.style.display = 'none';
+        preview.style.display = 'none';
+    }
+    updatePreview();
+}
+
+// Add travel row
+function addTravelRow() {
+    const id = Date.now();
+    travelItems.push({ id, from: '', to: '', amount: 0 });
+    renderTravelRows();
+}
+
+// Remove travel row
+function removeTravelRow(id) {
+    travelItems = travelItems.filter(item => item.id !== id);
+    renderTravelRows();
+    updatePreview();
+}
+
+// Render travel rows
+function renderTravelRows() {
+    const container = document.getElementById('travelRows');
+    container.innerHTML = '';
+
+    travelItems.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'travel-row';
+        row.innerHTML = `
+            <span class="travel-sl-num">${index + 1}</span>
+            <input type="text" class="travel-from-input" value="${item.from}"
+                   placeholder="Origin" onchange="updateTravelItem(${item.id}, 'from', this.value)">
+            <input type="text" class="travel-to-input" value="${item.to}"
+                   placeholder="Destination" onchange="updateTravelItem(${item.id}, 'to', this.value)">
+            <input type="number" class="travel-amount-input" value="${item.amount}" min="0"
+                   onchange="updateTravelItem(${item.id}, 'amount', parseFloat(this.value) || 0)">
+            <button class="remove-travel-btn" onclick="removeTravelRow(${item.id})">×</button>
+        `;
+        container.appendChild(row);
+    });
+
+    updateTravelTotal();
+}
+
+// Update travel item
+function updateTravelItem(id, field, value) {
+    const item = travelItems.find(i => i.id === id);
+    if (item) {
+        item[field] = value;
+        updateTravelTotal();
+        updatePreview();
+    }
+}
+
+// Update travel total
+function updateTravelTotal() {
+    const total = travelItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+    document.getElementById('travelTotalEditor').textContent = `AED ${total.toLocaleString()}`;
+}
+
+// Add custom TOS item
+function addCustomTos() {
+    const id = Date.now();
+    customTosItems.push({ id, title: 'Custom Term', text: 'Enter your custom term here.' });
+    renderCustomTosItems();
+    updatePreview();
+}
+
+// Remove custom TOS item
+function removeCustomTos(id) {
+    customTosItems = customTosItems.filter(item => item.id !== id);
+    renderCustomTosItems();
+    updatePreview();
+}
+
+// Render custom TOS items
+function renderCustomTosItems() {
+    const container = document.getElementById('customTosItems');
+    container.innerHTML = '';
+
+    customTosItems.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'tos-item custom-tos-item';
+        div.innerHTML = `
+            <button class="remove-custom-tos" onclick="removeCustomTos(${item.id})">×</button>
+            <input type="text" class="custom-tos-title" value="${item.title}"
+                   placeholder="Term Title" style="width: 100%; margin-bottom: 6px; padding: 6px; background: #34495e; border: 1px solid #4a6785; border-radius: 4px; color: #ecf0f1;"
+                   onchange="updateCustomTos(${item.id}, 'title', this.value)">
+            <textarea rows="2" onchange="updateCustomTos(${item.id}, 'text', this.value)">${item.text}</textarea>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// Update custom TOS item
+function updateCustomTos(id, field, value) {
+    const item = customTosItems.find(i => i.id === id);
+    if (item) {
+        item[field] = value;
+        updatePreview();
+    }
+}
+
+// Update TOS Preview
+function updateTosPreview() {
+    const tosList = document.getElementById('tosPreviewList');
+    if (!tosList) return;
+
+    tosList.innerHTML = '';
+
+    // Get dynamic values for substitution
+    const regularCallHours = document.getElementById('regularCallHours')?.value || '8';
+    const perDiemRate = document.getElementById('perDiemRate')?.value || '150';
+    const overtimePercentage = document.getElementById('overtimePercentage')?.value || '0';
+    const isDailyMode = document.getElementById('billingType')?.checked || false;
+    const dailyRate = document.getElementById('dailyRate')?.value || '1600';
+    const otHourlyRate = document.getElementById('otHourlyRate')?.value || '220';
+
+    // Generate overtime text based on billing mode
+    let overtimeText;
+    if (isDailyMode) {
+        overtimeText = `Overtime hours are charged at AED ${otHourlyRate} per hour.`;
+    } else if (overtimePercentage == 0) {
+        overtimeText = 'No overtime premium applies. All hours are charged at the standard hourly rate.';
+    } else {
+        overtimeText = `Hours exceeding regular call time are charged at ${overtimePercentage}% above the standard hourly rate.`;
+    }
+
+    // Regular Call Time
+    if (document.getElementById('tosCallTimeEnabled')?.checked) {
+        const text = (document.getElementById('tosCallTimeText')?.value || 'Standard working day is {callTime} hours.')
+            .replace('{callTime}', regularCallHours);
+        tosList.innerHTML += `<li><strong>REGULAR CALL TIME:</strong> ${text}</li>`;
+    }
+
+    // Daily Rate (only in daily mode)
+    if (isDailyMode) {
+        tosList.innerHTML += `<li><strong>DAILY RATE:</strong> Each day is billed at a fixed rate of <span class="highlight">AED ${dailyRate}</span> per day.</li>`;
+    }
+
+    // Overtime
+    if (document.getElementById('tosOvertimeEnabled')?.checked) {
+        let text = document.getElementById('tosOvertimeTextEdit')?.value || '{overtimeText}';
+        if (text === '{overtimeText}') {
+            text = overtimeText;
+        } else {
+            text = text.replace('{overtimeText}', overtimeText);
+        }
+        tosList.innerHTML += `<li><strong>OVERTIME:</strong> ${text}</li>`;
+    }
+
+    // Additional Day
+    if (document.getElementById('tosAdditionalDayEnabled')?.checked) {
+        const text = document.getElementById('tosAdditionalDayText')?.value || 'Any work exceeding 16 hours in a single day will be billed as an additional full day.';
+        tosList.innerHTML += `<li><strong>ADDITIONAL DAY:</strong> ${text}</li>`;
+    }
+
+    // Per Diem
+    if (document.getElementById('tosPerDiemEnabled')?.checked) {
+        const text = (document.getElementById('tosPerDiemText')?.value || 'A per diem allowance of AED {perDiemRate} per day applies to cover travel and incidental expenses.')
+            .replace('{perDiemRate}', perDiemRate);
+        tosList.innerHTML += `<li><strong>PER DIEM:</strong> ${text}</li>`;
+    }
+
+    // Payment
+    if (document.getElementById('tosPaymentEnabled')?.checked) {
+        const text = document.getElementById('tosPaymentText')?.value || 'Payment is due within 30 days of invoice date.';
+        tosList.innerHTML += `<li><strong>PAYMENT:</strong> ${text}</li>`;
+    }
+
+    // Custom TOS items
+    customTosItems.forEach(item => {
+        tosList.innerHTML += `<li><strong>${item.title.toUpperCase()}:</strong> ${item.text}</li>`;
+    });
+}
+
 // Select background image
 function selectBackground(bg, isDark = false) {
     selectedBackground = bg;
@@ -306,12 +550,24 @@ function selectBackground(bg, isDark = false) {
 
 // Color palettes
 const palettes = {
+    // Light palettes
     teal: { primary: '#1a5f5a', accent: '#e8f5f3' },
     navy: { primary: '#1a3a5f', accent: '#e8f0f5' },
     maroon: { primary: '#5f1a1a', accent: '#f5e8e8' },
     purple: { primary: '#4a1a5f', accent: '#f0e8f5' },
     forest: { primary: '#2d5f1a', accent: '#ecf5e8' },
-    dark: { primary: '#00d4aa', accent: '#1a1a2e', isDark: true, bgColor: '#16213e', textColor: '#ffffff', tableHeader: '#0f3460', tableBg: '#1a1a2e' }
+    ocean: { primary: '#0077b6', accent: '#e8f4f8' },
+    coral: { primary: '#e07a5f', accent: '#fdf2ef' },
+    slate: { primary: '#4a5568', accent: '#f0f2f4' },
+    gold: { primary: '#b8860b', accent: '#fdf8e8' },
+    rose: { primary: '#be185d', accent: '#fdf2f8' },
+    // Dark palettes
+    dark: { primary: '#00d4aa', accent: '#1a1a2e', isDark: true, bgColor: '#16213e', textColor: '#ffffff', tableHeader: '#0f3460', tableBg: '#1a1a2e' },
+    darkTeal: { primary: '#2dd4bf', accent: '#0d3b36', isDark: true, bgColor: '#0d3b36', textColor: '#ffffff', tableHeader: '#134e4a', tableBg: '#0f4a45' },
+    darkPurple: { primary: '#a78bfa', accent: '#2e1065', isDark: true, bgColor: '#2e1065', textColor: '#ffffff', tableHeader: '#4c1d95', tableBg: '#3b0764' },
+    darkRed: { primary: '#fca5a5', accent: '#450a0a', isDark: true, bgColor: '#450a0a', textColor: '#ffffff', tableHeader: '#7f1d1d', tableBg: '#5c1515' },
+    charcoal: { primary: '#9ca3af', accent: '#1f2937', isDark: true, bgColor: '#1f2937', textColor: '#ffffff', tableHeader: '#374151', tableBg: '#2d3748' },
+    nightBlue: { primary: '#60a5fa', accent: '#0c1929', isDark: true, bgColor: '#0c1929', textColor: '#ffffff', tableHeader: '#1e3a5f', tableBg: '#172554' }
 };
 
 // Apply preset palette
@@ -322,6 +578,14 @@ function applyPalette(name) {
         document.getElementById('primaryColor').value = palette.primary;
         document.getElementById('accentColor').value = palette.accent;
         applyColors(palette.primary, palette.accent, palette);
+
+        // Update selected state on palette buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.classList.remove('selected');
+            if (btn.dataset.palette === name) {
+                btn.classList.add('selected');
+            }
+        });
     }
 }
 
@@ -559,7 +823,11 @@ function toggleBillingType() {
 
         // Update overtime text for hourly mode
         if (tosOvertimeText) {
-            tosOvertimeText.innerHTML = `Hours exceeding regular call time are charged at <span id="tosOtRate">${otPercentage}</span>% above the standard hourly rate.`;
+            if (otPercentage == 0) {
+                tosOvertimeText.innerHTML = `No overtime premium applies. All hours are charged at the standard hourly rate.`;
+            } else {
+                tosOvertimeText.innerHTML = `Hours exceeding regular call time are charged at <span id="tosOtRate">${otPercentage}</span>% above the standard hourly rate.`;
+            }
         }
 
         // Show additional day line
@@ -762,7 +1030,7 @@ function generateDays() {
     // Loop through each day in range
     const currentDate = new Date(fromDate);
     while (currentDate <= toDate) {
-        const defaultJob = document.getElementById('jobDescription').value || 'Sound Operator';
+        const defaultJob = document.getElementById('jobDescription').value || '';
         lineItems.push({
             id: currentDate.getTime(),
             date: new Date(currentDate),
@@ -791,7 +1059,7 @@ function renderLineItems() {
     container.innerHTML = '';
     hourlyRate = parseFloat(document.getElementById('hourlyRate').value) || 200;
 
-    const defaultJob = document.getElementById('jobDescription').value || 'Sound Operator';
+    const defaultJob = document.getElementById('jobDescription').value || '';
 
     lineItems.forEach((item, index) => {
         const calc = calculateLineItem(item);
@@ -871,7 +1139,7 @@ function editDayJob(id) {
     if (!item) return;
 
     editingDayId = id;
-    const defaultJob = document.getElementById('jobDescription').value || 'Sound Operator';
+    const defaultJob = document.getElementById('jobDescription').value || '';
     const currentJob = item.jobDescription || defaultJob;
     const dateStr = formatDateDisplay(item.date);
 
@@ -892,7 +1160,7 @@ function saveJobModal() {
     const item = lineItems.find(i => i.id === editingDayId);
     if (!item) return;
 
-    const defaultJob = document.getElementById('jobDescription').value || 'Sound Operator';
+    const defaultJob = document.getElementById('jobDescription').value || '';
     const newJob = document.getElementById('modalJobInput').value.trim();
     item.jobDescription = newJob || defaultJob;
 
@@ -925,15 +1193,39 @@ async function loadQuotesList() {
         const quotes = await response.json();
 
         const select = document.getElementById('savedQuotes');
-        select.innerHTML = '<option value="">-- New Quote --</option>';
+        select.innerHTML = '<option value="">-- New Document --</option>';
 
-        quotes.forEach(quote => {
-            const option = document.createElement('option');
-            option.value = quote.id;
-            const date = quote.date ? new Date(quote.date).toLocaleDateString() : '';
-            option.textContent = `${quote.doc_type} #${quote.invoice_number || '?'} - ${quote.client_company || 'No client'} (${date})`;
-            select.appendChild(option);
-        });
+        // Separate quotes and invoices
+        const quotesList = quotes.filter(q => q.doc_type === 'QUOTE');
+        const invoicesList = quotes.filter(q => q.doc_type === 'INVOICE');
+
+        // Add Invoices group first (typically more frequently accessed)
+        if (invoicesList.length > 0) {
+            const invoiceGroup = document.createElement('optgroup');
+            invoiceGroup.label = `📄 Invoices (${invoicesList.length})`;
+            invoicesList.forEach(quote => {
+                const option = document.createElement('option');
+                option.value = quote.id;
+                const date = quote.date ? new Date(quote.date).toLocaleDateString() : '';
+                option.textContent = `Invoice #${quote.invoice_number || '?'} - ${quote.client_company || 'No client'} (${date})`;
+                invoiceGroup.appendChild(option);
+            });
+            select.appendChild(invoiceGroup);
+        }
+
+        // Add Quotes group
+        if (quotesList.length > 0) {
+            const quoteGroup = document.createElement('optgroup');
+            quoteGroup.label = `📋 Quotes (${quotesList.length})`;
+            quotesList.forEach(quote => {
+                const option = document.createElement('option');
+                option.value = quote.id;
+                const date = quote.date ? new Date(quote.date).toLocaleDateString() : '';
+                option.textContent = `Quote #${quote.invoice_number || '?'} - ${quote.client_company || 'No client'} (${date})`;
+                quoteGroup.appendChild(option);
+            });
+            select.appendChild(quoteGroup);
+        }
     } catch (error) {
         console.error('Error loading quotes:', error);
     }
@@ -956,8 +1248,8 @@ async function loadQuote(quoteId) {
         document.getElementById('docType').checked = quote.doc_type === 'INVOICE';
         document.getElementById('invoiceDate').value = quote.date || '';
         document.getElementById('invoiceNumber').value = quote.invoice_number || '01';
-        document.getElementById('poNumber').value = quote.po_number || 'PO000000';
-        document.getElementById('jobId').value = quote.job_id || 'EVS 00-00000';
+        document.getElementById('poNumber').value = quote.po_number || '';
+        document.getElementById('jobId').value = quote.job_id || '';
         // Select company in dropdown (handles companies that might not be in the list)
         const savedCompany = quote.client_company || '';
         if (savedCompany && !savedCompanies.find(c => c.name === savedCompany)) {
@@ -969,12 +1261,12 @@ async function loadQuote(quoteId) {
             select.appendChild(option);
         }
         document.getElementById('clientCompany').value = savedCompany;
-        document.getElementById('clientAddress').value = quote.client_address || 'PO Box 00000\nLocation - City\nUnited Arab Emirates';
-        document.getElementById('poc').value = quote.poc || 'Contact Name';
-        document.getElementById('pocPhone').value = quote.poc_phone || '+971 50 000 0000';
-        document.getElementById('pocEmail').value = quote.poc_email || 'contact@company.com';
-        document.getElementById('venue').value = quote.venue || 'Venue Name';
-        document.getElementById('jobDescription').value = quote.job_description || 'Sound Operator';
+        document.getElementById('clientAddress').value = quote.client_address || '';
+        document.getElementById('poc').value = quote.poc || '';
+        document.getElementById('pocPhone').value = quote.poc_phone || '';
+        document.getElementById('pocEmail').value = quote.poc_email || '';
+        document.getElementById('venue').value = quote.venue || '';
+        document.getElementById('jobDescription').value = quote.job_description || '';
         document.getElementById('hourlyRate').value = quote.hourly_rate || 200;
         document.getElementById('dateFrom').value = quote.date_from || '';
         document.getElementById('dateTo').value = quote.date_to || '';
@@ -982,7 +1274,7 @@ async function loadQuote(quoteId) {
 
         // Overtime settings
         document.getElementById('regularCallHours').value = quote.regular_call_hours || 8;
-        document.getElementById('overtimePercentage').value = quote.overtime_percentage || 10;
+        document.getElementById('overtimePercentage').value = quote.overtime_percentage !== undefined ? quote.overtime_percentage : 0;  // NA is default
         document.getElementById('perDiemEnabled').checked = quote.outside_dubai || false;
         document.getElementById('perDiemRate').value = quote.per_diem_rate || 150;
 
@@ -1047,8 +1339,68 @@ async function loadQuote(quoteId) {
             document.getElementById('equipmentRows').innerHTML = '';
         }
 
+        // Load travel expenses
+        const travelEnabled = quote.travel_expenses_enabled || false;
+        document.getElementById('travelExpensesEnabled').checked = travelEnabled;
+        document.getElementById('travelExpensesEditor').style.display = travelEnabled ? 'block' : 'none';
+        document.getElementById('travelPreview').style.display = travelEnabled ? 'block' : 'none';
+
+        if (quote.travel_items && quote.travel_items.length > 0) {
+            travelItems = quote.travel_items.map((item, index) => ({
+                id: Date.now() + index,
+                from: item.from || '',
+                to: item.to || '',
+                amount: item.amount || 0
+            }));
+            renderTravelRows();
+            updateTravelTotal();
+        } else {
+            travelItems = [];
+            document.getElementById('travelRows').innerHTML = '';
+        }
+
+        // Load additional expense description
+        const additionalEnabled = quote.additional_expense_enabled || false;
+        document.getElementById('additionalExpenseEnabled').checked = additionalEnabled;
+        document.getElementById('additionalExpenseAmount').value = quote.additional_expense_amount || 0;
+        document.getElementById('additionalExpenseDesc').value = quote.additional_expense_desc || '';
+
+        // Load TOS settings
+        if (quote.tos_settings) {
+            const tos = quote.tos_settings;
+            document.getElementById('tosCallTimeEnabled').checked = tos.callTimeEnabled ?? true;
+            document.getElementById('tosCallTimeText').value = tos.callTimeText || '';
+            document.getElementById('tosPerDiemEnabled').checked = tos.perDiemEnabled ?? true;
+            document.getElementById('tosPerDiemText').value = tos.perDiemText || '';
+            document.getElementById('tosOvertimeEnabled').checked = tos.overtimeEnabled ?? true;
+            document.getElementById('tosOvertimeText').value = tos.overtimeText || '';
+            document.getElementById('tosPaymentEnabled').checked = tos.paymentEnabled ?? true;
+            document.getElementById('tosPaymentText').value = tos.paymentText || '';
+            document.getElementById('tosCancellationEnabled').checked = tos.cancellationEnabled ?? true;
+            document.getElementById('tosCancellationText').value = tos.cancellationText || '';
+
+            // Load custom TOS items
+            if (tos.customItems && tos.customItems.length > 0) {
+                customTosItems = tos.customItems.map((item, index) => ({
+                    id: Date.now() + index,
+                    title: item.title || '',
+                    text: item.text || ''
+                }));
+                renderCustomTosItems();
+            } else {
+                customTosItems = [];
+                document.getElementById('customTosItems').innerHTML = '';
+            }
+        }
+
+        // Load discount settings
+        document.getElementById('discountMode').value = quote.discount_mode || 'off';
+        document.getElementById('discountValue').value = quote.discount_value || 0;
+        toggleDiscountInput();
+
         renderLineItems();
         updatePreview();
+        updateTosPreview();
     } catch (error) {
         console.error('Error loading quote:', error);
     }
@@ -1062,21 +1414,21 @@ function clearForm() {
     document.getElementById('docType').checked = false;
     document.getElementById('invoiceDate').value = today;
     document.getElementById('invoiceNumber').value = 'Auto';
-    document.getElementById('poNumber').value = 'PO000000';
-    document.getElementById('jobId').value = 'EVS 00-00000';
-    document.getElementById('clientCompany').value = '';  // Reset to placeholder
-    document.getElementById('clientAddress').value = 'PO Box 00000\nLocation - City\nUnited Arab Emirates';
-    document.getElementById('poc').value = 'Contact Name';
-    document.getElementById('pocPhone').value = '+971 50 000 0000';
-    document.getElementById('pocEmail').value = 'contact@company.com';
-    document.getElementById('venue').value = 'Venue Name';
+    document.getElementById('poNumber').value = '';
+    document.getElementById('jobId').value = '';
+    document.getElementById('clientCompany').value = '';
+    document.getElementById('clientAddress').value = '';
+    document.getElementById('poc').value = '';
+    document.getElementById('pocPhone').value = '';
+    document.getElementById('pocEmail').value = '';
+    document.getElementById('venue').value = '';
     document.getElementById('dateFrom').value = today;
     document.getElementById('dateTo').value = today;
     document.getElementById('taxRate').value = '0';
 
     // Reset overtime settings
     document.getElementById('regularCallHours').value = '8';
-    document.getElementById('overtimePercentage').value = '10';
+    document.getElementById('overtimePercentage').value = '0';  // NA is default
     document.getElementById('perDiemEnabled').checked = false;
     document.getElementById('perDiemRate').value = 150;
 
@@ -1092,14 +1444,14 @@ function clearForm() {
     if (userProfile) {
         hourlyRate = userProfile.default_hourly_rate || 200;
         document.getElementById('hourlyRate').value = hourlyRate;
-        document.getElementById('jobDescription').value = userProfile.default_job_description || 'Sound Operator';
+        document.getElementById('jobDescription').value = userProfile.default_job_description || '';
         document.getElementById('bankAccountHolder').value = userProfile.bank_account_holder || '';
         document.getElementById('bankName').value = userProfile.bank_name || '';
         document.getElementById('bankAccountNumber').value = userProfile.bank_account_number || '';
         document.getElementById('bankIban').value = userProfile.bank_iban || '';
     } else {
         document.getElementById('hourlyRate').value = '200';
-        document.getElementById('jobDescription').value = 'Sound Operator';
+        document.getElementById('jobDescription').value = '';
         document.getElementById('bankAccountHolder').value = '';
         document.getElementById('bankName').value = '';
         document.getElementById('bankAccountNumber').value = '';
@@ -1123,6 +1475,38 @@ function clearForm() {
     document.getElementById('hideLabor').checked = false;
     document.getElementById('laborSection').style.display = 'block';
     document.getElementById('laborPreview').style.display = 'block';
+
+    // Reset travel expenses
+    travelItems = [];
+    document.getElementById('travelExpensesEnabled').checked = false;
+    document.getElementById('travelExpensesEditor').style.display = 'none';
+    document.getElementById('travelPreview').style.display = 'none';
+    document.getElementById('travelRows').innerHTML = '';
+
+    // Reset additional expense
+    document.getElementById('additionalExpenseEnabled').checked = false;
+    document.getElementById('additionalExpenseEditor').style.display = 'none';
+    document.getElementById('additionalExpenseAmount').value = '0';
+    document.getElementById('additionalExpenseDesc').value = '';
+
+    // Reset TOS to defaults
+    document.getElementById('tosCallTimeEnabled').checked = true;
+    document.getElementById('tosOvertimeEnabled').checked = true;
+    document.getElementById('tosAdditionalDayEnabled').checked = true;
+    document.getElementById('tosPerDiemEnabled').checked = true;
+    document.getElementById('tosPaymentEnabled').checked = true;
+    document.getElementById('tosCallTimeText').value = 'Standard working day is {callTime} hours.';
+    document.getElementById('tosOvertimeTextEdit').value = '{overtimeText}';
+    document.getElementById('tosAdditionalDayText').value = 'Any work exceeding 16 hours in a single day will be billed as an additional full day.';
+    document.getElementById('tosPerDiemText').value = 'A per diem allowance of AED {perDiemRate} per day applies to cover travel and incidental expenses.';
+    document.getElementById('tosPaymentText').value = 'Payment is due within 30 days of invoice date.';
+    customTosItems = [];
+    document.getElementById('customTosItems').innerHTML = '';
+
+    // Reset discount
+    document.getElementById('discountMode').value = 'off';
+    document.getElementById('discountValue').value = '0';
+    toggleDiscountInput();
 
     updatePreview();
 }
@@ -1229,7 +1613,35 @@ async function performSaveQuote() {
             qty: item.qty,
             price: item.price,
             total: item.total
-        }))
+        })),
+        // Travel expenses data
+        travel_expenses_enabled: document.getElementById('travelExpensesEnabled')?.checked || false,
+        travel_items: travelItems.map(item => ({
+            from: item.from,
+            to: item.to,
+            amount: item.amount
+        })),
+        // Additional expense data
+        additional_expense_enabled: document.getElementById('additionalExpenseEnabled')?.checked || false,
+        additional_expense_amount: parseFloat(document.getElementById('additionalExpenseAmount')?.value) || 0,
+        additional_expense_desc: document.getElementById('additionalExpenseDesc')?.value || '',
+        // TOS settings
+        tos_settings: {
+            callTimeEnabled: document.getElementById('tosCallTimeEnabled')?.checked ?? true,
+            callTimeText: document.getElementById('tosCallTimeText')?.value || '',
+            perDiemEnabled: document.getElementById('tosPerDiemEnabled')?.checked ?? true,
+            perDiemText: document.getElementById('tosPerDiemText')?.value || '',
+            overtimeEnabled: document.getElementById('tosOvertimeEnabled')?.checked ?? true,
+            overtimeText: document.getElementById('tosOvertimeText')?.value || '',
+            paymentEnabled: document.getElementById('tosPaymentEnabled')?.checked ?? true,
+            paymentText: document.getElementById('tosPaymentText')?.value || '',
+            cancellationEnabled: document.getElementById('tosCancellationEnabled')?.checked ?? true,
+            cancellationText: document.getElementById('tosCancellationText')?.value || '',
+            customItems: customTosItems.map(item => ({ title: item.title, text: item.text }))
+        },
+        // Discount settings
+        discount_mode: document.getElementById('discountMode')?.value || 'off',
+        discount_value: parseFloat(document.getElementById('discountValue')?.value) || 0
     };
 
     try {
@@ -1321,6 +1733,12 @@ function calculateSubtotal() {
         subtotal += calculateEquipmentTotal();
     }
 
+    // Add travel expenses if enabled
+    const travelExpensesEnabled = document.getElementById('travelExpensesEnabled')?.checked || false;
+    if (travelExpensesEnabled) {
+        subtotal += calculateTravelTotal();
+    }
+
     // Add additional expenses if enabled
     const additionalExpenseEnabled = document.getElementById('additionalExpenseEnabled')?.checked || false;
     if (additionalExpenseEnabled) {
@@ -1331,10 +1749,31 @@ function calculateSubtotal() {
     return subtotal;
 }
 
+// Calculate travel total
+function calculateTravelTotal() {
+    return travelItems.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+}
+
+function calculateDiscount(subtotalWithTax) {
+    const mode = document.getElementById('discountMode').value;
+    const value = parseFloat(document.getElementById('discountValue').value) || 0;
+
+    if (mode === 'off' || value <= 0) return 0;
+
+    if (mode === 'percent') {
+        return subtotalWithTax * (value / 100);
+    } else if (mode === 'fixed') {
+        return Math.min(value, subtotalWithTax); // Don't discount more than total
+    }
+    return 0;
+}
+
 function calculateTotal() {
     const subtotal = calculateSubtotal();
     const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-    return subtotal + (subtotal * taxRate / 100);
+    const subtotalWithTax = subtotal + (subtotal * taxRate / 100);
+    const discount = calculateDiscount(subtotalWithTax);
+    return subtotalWithTax - discount;
 }
 
 // Calculate labor-only total (line items + per diem, excluding equipment)
@@ -1448,19 +1887,19 @@ function updatePreview() {
     document.getElementById('displayNumber').textContent = document.getElementById('invoiceNumber').value || '01';
 
     // Update PO and Job ID
-    document.getElementById('displayPO').textContent = document.getElementById('poNumber').value || 'PO000000';
-    document.getElementById('displayJobId').textContent = document.getElementById('jobId').value || 'EVS 00-00000';
+    document.getElementById('displayPO').textContent = document.getElementById('poNumber').value || '--';
+    document.getElementById('displayJobId').textContent = document.getElementById('jobId').value || '--';
 
     // Update client
     const company = document.getElementById('clientCompany').value;
     const address = document.getElementById('clientAddress').value;
-    document.getElementById('displayClient').innerHTML = (company || 'Company Name') + '<br>' + (address ? address.replace(/\n/g, '<br>') : '');
+    document.getElementById('displayClient').innerHTML = (company || '--') + (address ? '<br>' + address.replace(/\n/g, '<br>') : '');
 
     // Update POC info
-    document.getElementById('displayPOC').textContent = document.getElementById('poc').value || 'Contact Name';
-    document.getElementById('displayPOCPhone').textContent = document.getElementById('pocPhone').value || '+971 50 000 0000';
-    document.getElementById('displayPOCEmail').textContent = document.getElementById('pocEmail').value || 'contact@company.com';
-    document.getElementById('displayVenue').textContent = document.getElementById('venue').value || 'Venue Name';
+    document.getElementById('displayPOC').textContent = document.getElementById('poc').value || '--';
+    document.getElementById('displayPOCPhone').textContent = document.getElementById('pocPhone').value || '--';
+    document.getElementById('displayPOCEmail').textContent = document.getElementById('pocEmail').value || '--';
+    document.getElementById('displayVenue').textContent = document.getElementById('venue').value || '--';
 
     // Update bank details (use input values, fall back to user profile defaults, or "Set in Profile")
     const bankHolder = document.getElementById('bankAccountHolder').value || (userProfile ? userProfile.bank_account_holder : '') || 'Set in Profile';
@@ -1470,18 +1909,14 @@ function updatePreview() {
     document.getElementById('displayAccountNumber').textContent = document.getElementById('bankAccountNumber').value || (userProfile ? userProfile.bank_account_number : '') || 'Set in Profile';
     document.getElementById('displayIban').textContent = document.getElementById('bankIban').value || (userProfile ? userProfile.bank_iban : '') || 'Set in Profile';
 
-    // Update TOS with dynamic values
-    const regularCallHours = document.getElementById('regularCallHours').value || '8';
-    const overtimePercentage = document.getElementById('overtimePercentage').value || '10';
-    document.getElementById('tosCallTime').textContent = regularCallHours;
-    const tosOtRateEl = document.getElementById('tosOtRate');
-    if (tosOtRateEl) tosOtRateEl.textContent = overtimePercentage;
+    // Generate dynamic TOS preview
+    updateTosPreview();
 
     // Update items table with time in/out columns (only enabled days)
     const tbody = document.getElementById('itemsTableBody');
     tbody.innerHTML = '';
 
-    const defaultJob = document.getElementById('jobDescription').value || 'Sound Operator';
+    const defaultJob = document.getElementById('jobDescription').value || '';
     const enabledItems = lineItems.filter(item => item.enabled !== false);
     enabledItems.forEach(item => {
         const calc = calculateLineItem(item);
@@ -1521,12 +1956,43 @@ function updatePreview() {
         perDiemRow.style.display = 'none';
     }
 
+    // Handle travel expenses preview
+    const travelExpensesEnabled = document.getElementById('travelExpensesEnabled')?.checked || false;
+    const travelPreview = document.getElementById('travelPreview');
+    if (travelExpensesEnabled && travelItems.length > 0) {
+        const travelTbody = document.getElementById('travelTableBody');
+        travelTbody.innerHTML = '';
+        let travelTotal = 0;
+        travelItems.forEach((item, index) => {
+            const amount = parseFloat(item.amount) || 0;
+            travelTotal += amount;
+            travelTbody.innerHTML += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.from || '--'}</td>
+                    <td>${item.to || '--'}</td>
+                    <td>${formatCurrency(amount)}</td>
+                </tr>
+            `;
+        });
+        document.getElementById('travelTotalDisplay').textContent = formatCurrency(travelTotal);
+        travelPreview.style.display = 'block';
+    } else {
+        travelPreview.style.display = 'none';
+    }
+
     // Handle additional expense row
     const additionalExpenseEnabled = document.getElementById('additionalExpenseEnabled')?.checked || false;
     const additionalExpenseRow = document.getElementById('additionalExpenseRow');
     if (additionalExpenseEnabled) {
         const additionalExpense = parseFloat(document.getElementById('additionalExpenseAmount').value) || 0;
+        const additionalExpenseDesc = document.getElementById('additionalExpenseDesc')?.value || '';
         document.getElementById('additionalExpenseDisplay').textContent = formatCurrency(additionalExpense);
+        // Update label text
+        const labelText = document.getElementById('additionalExpenseLabelText');
+        if (labelText) {
+            labelText.textContent = additionalExpenseDesc ? ` - ${additionalExpenseDesc}` : '';
+        }
         additionalExpenseRow.style.display = 'flex';
     } else {
         additionalExpenseRow.style.display = 'none';
@@ -1535,10 +2001,32 @@ function updatePreview() {
     // Update totals
     const subtotal = calculateSubtotal();
     const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+    const subtotalWithTax = subtotal + (subtotal * taxRate / 100);
+    const discountMode = document.getElementById('discountMode').value;
+    const discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
+    const discount = calculateDiscount(subtotalWithTax);
     const total = calculateTotal();
 
     document.getElementById('displaySubtotal').textContent = formatCurrency(subtotal);
     document.getElementById('displayTax').textContent = taxRate + '%';
+
+    // Show/hide discount row
+    const discountRow = document.getElementById('discountRow');
+    const discountLabel = document.getElementById('discountLabel');
+    const displayDiscount = document.getElementById('displayDiscount');
+
+    if (discountMode !== 'off' && discount > 0) {
+        discountRow.style.display = 'flex';
+        if (discountMode === 'percent') {
+            discountLabel.textContent = `DISCOUNT (${discountValue}%)`;
+        } else {
+            discountLabel.textContent = 'DISCOUNT';
+        }
+        displayDiscount.textContent = '- ' + formatCurrency(discount);
+    } else {
+        discountRow.style.display = 'none';
+    }
+
     document.getElementById('displayTotal').textContent = formatCurrency(total);
 
     // Update editor total
@@ -1691,7 +2179,35 @@ async function saveQuoteForPDF() {
             qty: item.qty,
             price: item.price,
             total: item.total
-        }))
+        })),
+        // Travel expenses data
+        travel_expenses_enabled: document.getElementById('travelExpensesEnabled')?.checked || false,
+        travel_items: travelItems.map(item => ({
+            from: item.from,
+            to: item.to,
+            amount: item.amount
+        })),
+        // Additional expense data
+        additional_expense_enabled: document.getElementById('additionalExpenseEnabled')?.checked || false,
+        additional_expense_amount: parseFloat(document.getElementById('additionalExpenseAmount')?.value) || 0,
+        additional_expense_desc: document.getElementById('additionalExpenseDesc')?.value || '',
+        // TOS settings
+        tos_settings: {
+            callTimeEnabled: document.getElementById('tosCallTimeEnabled')?.checked ?? true,
+            callTimeText: document.getElementById('tosCallTimeText')?.value || '',
+            perDiemEnabled: document.getElementById('tosPerDiemEnabled')?.checked ?? true,
+            perDiemText: document.getElementById('tosPerDiemText')?.value || '',
+            overtimeEnabled: document.getElementById('tosOvertimeEnabled')?.checked ?? true,
+            overtimeText: document.getElementById('tosOvertimeText')?.value || '',
+            paymentEnabled: document.getElementById('tosPaymentEnabled')?.checked ?? true,
+            paymentText: document.getElementById('tosPaymentText')?.value || '',
+            cancellationEnabled: document.getElementById('tosCancellationEnabled')?.checked ?? true,
+            cancellationText: document.getElementById('tosCancellationText')?.value || '',
+            customItems: customTosItems.map(item => ({ title: item.title, text: item.text }))
+        },
+        // Discount settings
+        discount_mode: document.getElementById('discountMode')?.value || 'off',
+        discount_value: parseFloat(document.getElementById('discountValue')?.value) || 0
     };
 
     try {

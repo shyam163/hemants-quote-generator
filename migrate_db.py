@@ -177,7 +177,99 @@ def migrate_hide_labor():
         conn.close()
 
 
+def migrate_travel_expense_tos():
+    """Add travel expenses, additional expense description, and TOS settings columns to quote table"""
+
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found at {DB_PATH}")
+        return
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # Check if columns already exist
+        cursor.execute("PRAGMA table_info(quote)")
+        columns = [col[1] for col in cursor.fetchall()]
+
+        columns_to_add = []
+        if 'travel_expenses_enabled' not in columns:
+            columns_to_add.append(('travel_expenses_enabled', 'BOOLEAN DEFAULT 0'))
+        if 'travel_items' not in columns:
+            columns_to_add.append(('travel_items', 'TEXT'))
+        if 'additional_expense_enabled' not in columns:
+            columns_to_add.append(('additional_expense_enabled', 'BOOLEAN DEFAULT 0'))
+        if 'additional_expense_amount' not in columns:
+            columns_to_add.append(('additional_expense_amount', 'REAL DEFAULT 0'))
+        if 'additional_expense_desc' not in columns:
+            columns_to_add.append(('additional_expense_desc', 'VARCHAR(200)'))
+        if 'tos_settings' not in columns:
+            columns_to_add.append(('tos_settings', 'TEXT'))
+
+        if not columns_to_add:
+            print("Travel/expense/TOS columns already exist")
+            return
+
+        print(f"Adding {len(columns_to_add)} travel/expense/TOS column(s)...")
+        for col_name, col_def in columns_to_add:
+            cursor.execute(f"ALTER TABLE quote ADD COLUMN {col_name} {col_def}")
+            print(f"  Added: {col_name}")
+
+        conn.commit()
+        print("Travel/expense/TOS migration complete!")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Travel/expense/TOS migration failed: {e}")
+        raise
+    finally:
+        conn.close()
+
+
+def migrate_discount():
+    """Add discount columns to quote table"""
+
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found at {DB_PATH}")
+        return
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+
+    try:
+        # Check if columns already exist
+        cursor.execute("PRAGMA table_info(quote)")
+        columns = [col[1] for col in cursor.fetchall()]
+
+        columns_to_add = []
+        if 'discount_mode' not in columns:
+            columns_to_add.append(('discount_mode', "VARCHAR(10) DEFAULT 'off'"))
+        if 'discount_value' not in columns:
+            columns_to_add.append(('discount_value', 'REAL DEFAULT 0'))
+
+        if not columns_to_add:
+            print("Discount columns already exist")
+            return
+
+        print(f"Adding {len(columns_to_add)} discount column(s)...")
+        for col_name, col_def in columns_to_add:
+            cursor.execute(f"ALTER TABLE quote ADD COLUMN {col_name} {col_def}")
+            print(f"  Added: {col_name}")
+
+        conn.commit()
+        print("Discount migration complete!")
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Discount migration failed: {e}")
+        raise
+    finally:
+        conn.close()
+
+
 if __name__ == '__main__':
     migrate()
     migrate_equipments()
     migrate_hide_labor()
+    migrate_travel_expense_tos()
+    migrate_discount()
