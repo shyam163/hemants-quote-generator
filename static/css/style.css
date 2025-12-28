@@ -1010,7 +1010,7 @@ input:checked + .toggle-slider:before {
     flex-wrap: wrap;
 }
 
-.settings-row .tax-totals-section {
+.tax-totals-section {
     display: flex;
     gap: 10px;
     align-items: center;
@@ -1131,6 +1131,22 @@ input:checked + .toggle-slider:before {
 .form-group input:focus,
 .form-group textarea:focus {
     outline: 2px solid #1abc9c;
+}
+
+/* Inline Form Row - for side-by-side fields */
+.form-row-inline {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.form-row-inline .form-group.compact {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.form-row-inline .form-group.compact input {
+    max-width: 100%;
 }
 
 /* Invoice Number with Preview */

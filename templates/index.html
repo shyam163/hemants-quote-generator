@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Quote Generator</title>
     <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/favicon.jpg') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=27">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=28">
 </head>
 <body>
     <!-- Navigation Bar -->
@@ -128,23 +128,27 @@
                         <span id="invoiceNumberPreview" class="invoice-number-preview">-NONE-DEC-2025</span>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>PO #</label>
-                    <input type="text" id="poNumber" value="" placeholder="PO000000" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>Job ID</label>
-                    <input type="text" id="jobId" value="" placeholder="EVS 00-00000" onchange="updatePreview()">
+                <div class="form-row-inline">
+                    <div class="form-group compact">
+                        <label>PO #</label>
+                        <input type="text" id="poNumber" value="" placeholder="PO000000" onchange="updatePreview()">
+                    </div>
+                    <div class="form-group compact">
+                        <label>Job ID</label>
+                        <input type="text" id="jobId" value="" placeholder="EVS 00-00000" onchange="updatePreview()">
+                    </div>
                 </div>
 
                 <h3>Work Period</h3>
-                <div class="form-group">
-                    <label>From Date</label>
-                    <input type="date" id="dateFrom" onchange="updatePreview()">
-                </div>
-                <div class="form-group">
-                    <label>To Date</label>
-                    <input type="date" id="dateTo" onchange="updatePreview()">
+                <div class="form-row-inline">
+                    <div class="form-group compact">
+                        <label>From</label>
+                        <input type="date" id="dateFrom" onchange="updatePreview()">
+                    </div>
+                    <div class="form-group compact">
+                        <label>To</label>
+                        <input type="date" id="dateTo" onchange="updatePreview()">
+                    </div>
                 </div>
                 <button class="generate-btn" onclick="generateDays()">Generate Days</button>
             </div>
@@ -197,26 +201,26 @@
                     <label>Description</label>
                     <input type="text" id="jobDescription" value="" placeholder="Sound Operator" onchange="updatePreview()">
                 </div>
+            </div>
+        </div>
 
-                <!-- Tax, Discount, and Total -->
-                <div class="tax-totals-section" style="margin-top: 15px;">
-                    <div class="tax-inline">
-                        <label>Tax(%)</label>
-                        <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
-                    </div>
-                    <div class="discount-inline">
-                        <label>Discount</label>
-                        <select id="discountMode" onchange="toggleDiscountInput(); updatePreview();">
-                            <option value="off">Off</option>
-                            <option value="percent">%</option>
-                            <option value="fixed">Fixed</option>
-                        </select>
-                        <input type="number" id="discountValue" value="0" min="0" step="0.01" placeholder="0" onchange="updatePreview();" style="display: none;">
-                    </div>
-                    <div class="totals-display">
-                        <div>Total: <span id="editorTotal">AED 0</span></div>
-                    </div>
-                </div>
+        <!-- Tax, Discount, and Total - Right justified -->
+        <div class="tax-totals-section" style="justify-content: flex-end; margin-top: 10px;">
+            <div class="tax-inline">
+                <label>Tax(%)</label>
+                <input type="number" id="taxRate" value="0" min="0" max="100" onchange="updatePreview()">
+            </div>
+            <div class="discount-inline">
+                <label>Discount</label>
+                <select id="discountMode" onchange="toggleDiscountInput(); updatePreview();">
+                    <option value="off">Off</option>
+                    <option value="percent">%</option>
+                    <option value="fixed">Fixed</option>
+                </select>
+                <input type="number" id="discountValue" value="0" min="0" step="0.01" placeholder="0" onchange="updatePreview();" style="display: none;">
+            </div>
+            <div class="totals-display">
+                <div>Total: <span id="editorTotal">AED 0</span></div>
             </div>
         </div>
 
